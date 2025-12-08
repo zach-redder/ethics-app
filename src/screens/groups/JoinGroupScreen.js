@@ -13,7 +13,7 @@ import { groupMemberService, groupService } from '../../services';
 /**
  * Join Group Screen - Enter 5-digit PIN
  */
-export const JoinGroupScreen = ({ navigation }) => {
+export const JoinGroupScreen = ({ navigation, route }) => {
   const [code, setCode] = useState(['', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef([]);
@@ -86,13 +86,20 @@ export const JoinGroupScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (route?.params?.fromDashboard) {
+              navigation.navigate('Dashboard');
+            } else {
+              navigation.goBack();
+            }
+          }}
           style={styles.closeButton}
         >
           <Text style={styles.closeIcon}>×</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Enter Group Code</Text>
-        <View style={styles.badge} />
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Enter Group Code</Text>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -133,12 +140,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 48,
+    position: 'relative',
   },
   closeButton: {
     width: 40,
     padding: 4,
+    position: 'absolute',
+    left: 0,
+    zIndex: 1,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closeIcon: {
     fontSize: 36,
@@ -150,12 +165,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.black,
-  },
-  badge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.error,
   },
   content: {
     flex: 1,

@@ -1,158 +1,152 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  ScrollView,
+  TouchableOpacity,
   Alert,
-  ActivityIndicator,
+  Platform,
+  Linking,
 } from 'react-native';
-import { Button, Input } from '../../components/index';
-import { COLORS, SIZES } from '../../constants/index';
-import { authService, userService } from '../../services/index';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../../constants';
+import { userService, authService } from '../../services';
+import { EditProfileModal } from './EditProfileModal';
+import { BottomTabBar } from '../../components';
 
 /**
  * Profile Screen
- * Demonstrates user profile management with Supabase
+ * Main profile screen with settings options
  */
 export const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  // Form fields
-  const [username, setUsername] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [bio, setBio] = useState('');
-
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadUser = useCallback(async () => {
     try {
-      // Get current user
-      const { user: currentUser } = await authService.getCurrentUser();
-      setUser(currentUser);
-
-      if (currentUser) {
-        // Load user profile
-        const { data, error } = await userService.getProfile(currentUser.id);
-
-        if (!error && data) {
-          setProfile(data);
-          setUsername(data.username || '');
-          setFullName(data.full_name || '');
-          setBio(data.bio || '');
-        }
+      const { data, error } = await userService.getCurrentUser();
+      if (error) {
+        console.error('Error loading user:', error);
+      } else {
+        setUser(data);
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading user:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
+
+  const handleEditProfile = () => {
+    setShowEditModal(true);
+  };
+
+  const handleNotifications = () => {
+    // Open device notification settings
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
     }
   };
 
-  const handleSaveProfile = async () => {
-    if (!user) {
-      Alert.alert('Error', 'No user logged in');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { data, error } = await userService.upsertProfile(user.id, {
-        username,
-        full_name: fullName,
-        bio,
-      });
-
-      if (error) {
-        Alert.alert('Error', error.message);
-      } else {
-        Alert.alert('Success', 'Profile updated successfully!');
-        setProfile(data);
-      }
-    } catch (err) {
-      Alert.alert('Error', err.message);
-    } finally {
-      setSaving(false);
-    }
+  const handleReportIssue = () => {
+    navigation.navigate('ReportIssue');
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await authService.signOut();
+            if (error) {
+              Alert.alert('Error', error.message);
+            } else {
+              // Navigation will be handled by auth state change listener in App.js
+            }
+          },
+        },
+      ]
     );
-  }
+  };
+
+  const handleProfileUpdated = () => {
+    setShowEditModal(false);
+    loadUser();
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-          {user && (
-            <Text style={styles.email}>{user.email}</Text>
-          )}
-        </View>
+    <View style={styles.container}>
+      <Text style={styles.title}>Profile</Text>
 
-        <View style={styles.form}>
-          <Input
-            label="Username"
-            value={username}
-            onChangeText={setUsername}
-            placeholder="Enter your username"
-            autoCapitalize="none"
-          />
+      <View style={styles.profileSection}>
+        <Text style={styles.userName}>{user?.name || 'User'}</Text>
+      </View>
 
-          <Input
-            label="Full Name"
-            value={fullName}
-            onChangeText={setFullName}
-            placeholder="Enter your full name"
-          />
+      <View style={styles.card}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleEditProfile}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="pencil" size={20} color={COLORS.black} />
+          <Text style={styles.menuItemText}>Edit Profile</Text>
+        </TouchableOpacity>
 
-          <Input
-            label="Bio"
-            value={bio}
-            onChangeText={setBio}
-            placeholder="Tell us about yourself"
-            multiline
-            numberOfLines={4}
-            style={styles.bioInput}
-          />
+        <View style={styles.divider} />
 
-          <Button
-            title="Save Profile"
-            onPress={handleSaveProfile}
-            loading={saving}
-            style={styles.button}
-          />
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleNotifications}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="notifications-outline" size={20} color={COLORS.black} />
+          <Text style={styles.menuItemText}>Notifications</Text>
+        </TouchableOpacity>
 
-          <Button
-            title="Back to Home"
-            onPress={() => navigation.goBack()}
-            variant="outline"
-            style={styles.button}
-          />
-        </View>
+        <View style={styles.divider} />
 
-        <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>Profile Information</Text>
-          <Text style={styles.infoText}>
-            This screen demonstrates how to:
-          </Text>
-          <Text style={styles.infoItem}>• Load user data from Supabase</Text>
-          <Text style={styles.infoItem}>• Update user profiles</Text>
-          <Text style={styles.infoItem}>• Handle form inputs</Text>
-          <Text style={styles.infoItem}>• Manage loading states</Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleReportIssue}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="alert-circle-outline" size={20} color={COLORS.black} />
+          <Text style={styles.menuItemText}>Report Issue</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
+          <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      <BottomTabBar navigation={navigation} activeScreen="Profile" />
+
+      <EditProfileModal
+        visible={showEditModal}
+        user={user}
+        onClose={() => setShowEditModal(false)}
+        onProfileUpdated={handleProfileUpdated}
+      />
+    </View>
   );
 };
 
@@ -160,63 +154,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
-    padding: SIZES.padding * 2,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    paddingTop: 70,
   },
   title: {
-    fontSize: SIZES.h2,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.dark,
+    color: COLORS.black,
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
-  email: {
-    fontSize: SIZES.font,
-    color: COLORS.gray,
-    marginTop: SIZES.base,
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 32,
   },
-  form: {
-    padding: SIZES.padding * 2,
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.black,
   },
-  bioInput: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  button: {
-    marginTop: SIZES.padding,
-  },
-  infoSection: {
-    margin: SIZES.padding * 2,
-    marginTop: 0,
-    padding: SIZES.padding * 1.5,
+  card: {
     backgroundColor: COLORS.white,
-    borderRadius: SIZES.radius,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  infoTitle: {
-    fontSize: SIZES.medium,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: SIZES.padding,
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
   },
-  infoText: {
-    fontSize: SIZES.font,
-    color: COLORS.gray,
-    marginBottom: SIZES.base,
+  menuItemText: {
+    fontSize: 16,
+    color: COLORS.black,
   },
-  infoItem: {
-    fontSize: SIZES.font,
-    color: COLORS.gray,
-    marginLeft: SIZES.padding,
-    marginBottom: SIZES.base / 2,
+  logoutText: {
+    color: COLORS.error,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.lightGray,
+    marginHorizontal: 16,
   },
 });
+

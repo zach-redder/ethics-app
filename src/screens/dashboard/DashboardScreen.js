@@ -7,10 +7,14 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../constants';
 import { groupService } from '../../services';
+import { BottomTabBar } from '../../components';
 
 /**
  * Dashboard Screen - Main app screen showing user's groups
@@ -24,7 +28,45 @@ export const DashboardScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     loadGroups();
+    checkAndRequestNotifications();
   }, []);
+
+  const checkAndRequestNotifications = async () => {
+    try {
+      // Check if we've already requested notifications
+      const hasRequestedNotifications = await AsyncStorage.getItem('hasRequestedNotifications');
+      
+      // Only request if:
+      // 1. We haven't requested before
+      // 2. User is coming from onboarding (GroupConfirmation) - check route params
+      const isFromOnboarding = route.params?.fromOnboarding;
+      
+      if (!hasRequestedNotifications && isFromOnboarding) {
+        // Configure notification handler
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+        
+        // Request notification permissions
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        
+        // Mark that we've requested permissions (regardless of whether they granted it)
+        await AsyncStorage.setItem('hasRequestedNotifications', 'true');
+      }
+    } catch (error) {
+      console.error('Error requesting notification permissions:', error);
+    }
+  };
 
   const loadGroups = async () => {
     try {
@@ -48,15 +90,28 @@ export const DashboardScreen = ({ navigation, route }) => {
     loadGroups();
   };
 
-  const renderGroupCard = (group, role) => (
-    <View key={group.id} style={styles.groupCard}>
-      <View style={styles.groupHeader}>
-        <Text style={styles.groupName}>{group.name}</Text>
-        <Text style={styles.roleText}>{role}</Text>
-      </View>
-      <Text style={styles.groupDescription} numberOfLines={2}>
-        {group.description || 'No description'}
-      </Text>
+  const renderGroupCard = (group, role, isLast) => (
+    <View key={group.id}>
+      <TouchableOpacity
+        style={styles.groupCard}
+        onPress={() => {
+          if (role === 'Owner') {
+            navigation.navigate('CreatedGroupDetail', { groupId: group.id });
+          } else {
+            navigation.navigate('JoinedGroupDetail', { groupId: group.id });
+          }
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={styles.groupHeader}>
+          <Text style={styles.groupName}>{group.name}</Text>
+          <Text style={styles.roleText}>{role}</Text>
+        </View>
+        <Text style={styles.groupDescription} numberOfLines={2}>
+          {group.description || 'No description'}
+        </Text>
+      </TouchableOpacity>
+      {!isLast && <View style={styles.groupSeparator} />}
     </View>
   );
 
@@ -125,10 +180,11 @@ export const DashboardScreen = ({ navigation, route }) => {
           {loading ? (
             <ActivityIndicator color={COLORS.primary} style={styles.loader} />
           ) : currentGroups.length > 0 ? (
-            currentGroups.map((group) =>
+            currentGroups.map((group, index) =>
               renderGroupCard(
                 group,
-                activeTab === 'created' ? 'Owner' : 'Member'
+                activeTab === 'created' ? 'Owner' : 'Member',
+                index === currentGroups.length - 1
               )
             )
           ) : (
@@ -140,7 +196,8 @@ export const DashboardScreen = ({ navigation, route }) => {
           style={styles.actionButton}
           onPress={() =>
             navigation.navigate(
-              activeTab === 'created' ? 'CreateGroup' : 'JoinGroup'
+              activeTab === 'created' ? 'CreateGroup' : 'JoinGroup',
+              { fromDashboard: true }
             )
           }
           activeOpacity={0.85}
@@ -163,20 +220,7 @@ export const DashboardScreen = ({ navigation, route }) => {
         </Text>
       </View>
 
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.85}>
-          <Ionicons name="home" size={24} color={COLORS.black} />
-          <Text style={styles.navLabel}>Dashboard</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Profile')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="person" size={24} color={COLORS.gray} />
-          <Text style={[styles.navLabel, styles.navLabelInactive]}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomTabBar navigation={navigation} activeScreen="Dashboard" />
     </View>
   );
 };
@@ -200,7 +244,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
-    maxHeight: 400,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -248,9 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
     marginVertical: 16,
   },
-  groupsList: {
-    maxHeight: 150,
-  },
+
   loader: {
     marginVertical: 20,
   },
@@ -261,6 +302,11 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   groupCard: {
+    marginBottom: 16,
+  },
+  groupSeparator: {
+    height: 1,
+    backgroundColor: COLORS.lightGray,
     marginBottom: 16,
   },
   groupHeader: {
@@ -326,36 +372,6 @@ const styles = StyleSheet.create({
   },
   activityText: {
     fontSize: 14,
-    color: COLORS.gray,
-  },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: COLORS.white,
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingBottom: 24,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.lightGray,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 8,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  navLabel: {
-    fontSize: 12,
-    color: COLORS.black,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  navLabelInactive: {
     color: COLORS.gray,
   },
 });

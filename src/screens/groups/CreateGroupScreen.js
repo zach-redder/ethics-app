@@ -18,7 +18,7 @@ import { groupService } from '../../services';
 /**
  * Create Group Screen
  */
-export const CreateGroupScreen = ({ navigation }) => {
+export const CreateGroupScreen = ({ navigation, route }) => {
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState(null);
@@ -86,7 +86,13 @@ export const CreateGroupScreen = ({ navigation }) => {
       >
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              if (route?.params?.fromDashboard) {
+                navigation.navigate('Dashboard');
+              } else {
+                navigation.goBack();
+              }
+            }}
             style={styles.closeButton}
           >
             <Text style={styles.closeIcon}>×</Text>

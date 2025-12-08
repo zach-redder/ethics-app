@@ -12,6 +12,13 @@ import {
   GroupConfirmationScreen,
   DashboardScreen,
   ProfileScreen,
+  CreatedGroupDetailScreen,
+  ManageMembersScreen,
+  ExerciseDetailScreen,
+  JoinedGroupDetailScreen,
+  JoinedExerciseDetailScreen,
+  ReportIssueScreen,
+  ReportIssueSuccessModal,
 } from './src/screens';
 import { authService, userService } from './src/services';
 import { COLORS } from './src/constants';
@@ -95,6 +102,12 @@ export default function App() {
         'GroupConfirmation': 'GroupChoice',
         'Dashboard': 'GroupChoice',
         'Profile': 'Dashboard',
+        'ReportIssue': 'Profile',
+        'CreatedGroupDetail': 'Dashboard',
+        'ManageMembers': 'CreatedGroupDetail',
+        'ExerciseDetail': 'CreatedGroupDetail',
+        'JoinedGroupDetail': 'Dashboard',
+        'JoinedExerciseDetail': 'JoinedGroupDetail',
       };
       setCurrentScreen(backMap[currentScreen] || 'Welcome');
     },
@@ -125,15 +138,27 @@ export default function App() {
       case 'GroupChoice':
         return <GroupChoiceScreen navigation={navigation} />;
       case 'CreateGroup':
-        return <CreateGroupScreen navigation={navigation} />;
+        return <CreateGroupScreen navigation={navigation} route={route} />;
       case 'JoinGroup':
-        return <JoinGroupScreen navigation={navigation} />;
+        return <JoinGroupScreen navigation={navigation} route={route} />;
       case 'GroupConfirmation':
         return <GroupConfirmationScreen navigation={navigation} route={route} />;
       case 'Dashboard':
         return <DashboardScreen navigation={navigation} route={route} />;
       case 'Profile':
         return <ProfileScreen navigation={navigation} />;
+      case 'CreatedGroupDetail':
+        return <CreatedGroupDetailScreen navigation={navigation} route={route} />;
+      case 'ManageMembers':
+        return <ManageMembersScreen navigation={navigation} route={route} />;
+      case 'ExerciseDetail':
+        return <ExerciseDetailScreen navigation={navigation} route={route} />;
+      case 'JoinedGroupDetail':
+        return <JoinedGroupDetailScreen navigation={navigation} route={route} />;
+      case 'JoinedExerciseDetail':
+        return <JoinedExerciseDetailScreen navigation={navigation} route={route} />;
+      case 'ReportIssue':
+        return <ReportIssueScreen navigation={navigation} route={route} />;
       default:
         return <WelcomeScreen navigation={navigation} />;
     }

@@ -12,6 +12,7 @@ export const GroupConfirmationScreen = ({ navigation, route }) => {
     // Navigate to dashboard
     navigation.navigate('Dashboard', {
       initialTab: isCreator ? 'created' : 'joined',
+      fromOnboarding: true, // Flag to indicate first time reaching dashboard
     });
   };
 
