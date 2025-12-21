@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { COLORS } from '../../constants';
 
 /**
@@ -9,12 +9,16 @@ export const WelcomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {/* Placeholder for logo/image */}
+        {/* App Logo */}
         <View style={styles.logoContainer}>
-          <View style={styles.logo} />
+          <Image 
+            source={require('../../../assets/logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
-        <Text style={styles.tagline}>cool image here</Text>
+        <Text style={styles.tagline}>Ethics App</Text>
       </View>
 
       <TouchableOpacity
@@ -46,10 +50,8 @@ const styles = StyleSheet.create({
     marginBottom: 120,
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.white,
+    width: 200,
+    height: 200,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,

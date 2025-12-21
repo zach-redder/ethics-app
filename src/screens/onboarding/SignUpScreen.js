@@ -119,19 +119,6 @@ export const SignUpScreen = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity style={styles.googleButton} activeOpacity={0.85}>
-            <View style={styles.googleIconContainer}>
-              <Text style={styles.googleIcon}>G</Text>
-            </View>
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             onPress={() => navigation.navigate('SignIn')}
             style={styles.linkContainer}
@@ -208,54 +195,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.5,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.gray,
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: COLORS.gray,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  googleIconContainer: {
-    backgroundColor: COLORS.white,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  googleIcon: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4285F4',
-  },
-  googleButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
   },
   linkContainer: {
     marginTop: 24,
