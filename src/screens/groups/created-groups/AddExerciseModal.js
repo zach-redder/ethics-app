@@ -203,20 +203,23 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
         {showStartPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={startDate || new Date()}
+              value={startDate ? new Date(startDate) : new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              minimumDate={new Date()}
               onChange={(event, selectedDate) => {
                 if (Platform.OS === 'android') {
                   setShowStartPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  setStartDate(selectedDate);
-                  if (Platform.OS === 'ios') {
+                  if (event.type === 'set' && selectedDate) {
+                    setStartDate(selectedDate);
+                  }
+                } else {
+                  // iOS
+                  if (event.type === 'set' && selectedDate) {
+                    setStartDate(selectedDate);
+                  } else if (event.type === 'dismissed') {
                     setShowStartPicker(false);
                   }
-                } else if (event.type === 'dismissed') {
-                  setShowStartPicker(false);
                 }
               }}
             />
@@ -234,20 +237,23 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
         {showEndPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={endDate || new Date()}
+              value={endDate ? new Date(endDate) : (startDate ? new Date(startDate) : new Date())}
               mode="date"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              minimumDate={startDate ? new Date(startDate) : new Date()}
               onChange={(event, selectedDate) => {
                 if (Platform.OS === 'android') {
                   setShowEndPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  setEndDate(selectedDate);
-                  if (Platform.OS === 'ios') {
+                  if (event.type === 'set' && selectedDate) {
+                    setEndDate(selectedDate);
+                  }
+                } else {
+                  // iOS
+                  if (event.type === 'set' && selectedDate) {
+                    setEndDate(selectedDate);
+                  } else if (event.type === 'dismissed') {
                     setShowEndPicker(false);
                   }
-                } else if (event.type === 'dismissed') {
-                  setShowEndPicker(false);
                 }
               }}
             />
@@ -285,7 +291,7 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: 36,
-    color: COLORS.black,
+    color: COLORS.secondary,
     fontWeight: '300',
     lineHeight: 36,
   },

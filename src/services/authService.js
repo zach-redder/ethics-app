@@ -206,14 +206,37 @@ export const authService = {
   /**
    * Reset password for user email
    * @param {string} email - User's email
+   * @param {object} options - Additional options for password reset
    */
-  resetPassword: async (email) => {
+  resetPassword: async (email, options = {}) => {
+    console.log('🔐 [resetPassword] Starting password reset for:', email);
     try {
-      const { data, error } = await auth.resetPasswordForEmail(email);
-      if (error) throw error;
+      // Configure redirect URL - for mobile apps, this can be a deep link or web URL
+      // The user will receive an email with a link that redirects here
+      const redirectTo = options.redirectTo || 'https://your-app.com/reset-password';
+      
+      const { data, error } = await auth.resetPasswordForEmail(email, {
+        redirectTo,
+        ...options,
+      });
+      
+      if (error) {
+        console.error('❌ [resetPassword] Error:', {
+          message: error.message,
+          name: error.name,
+          status: error.status,
+        });
+        throw error;
+      }
+      
+      console.log('✅ [resetPassword] Success - reset email sent to:', email);
       return { data, error: null };
     } catch (error) {
-      console.error('Reset password error:', error.message);
+      console.error('❌ [resetPassword] Exception:', {
+        message: error.message,
+        name: error.name,
+        type: error.constructor.name,
+      });
       return { data: null, error };
     }
   },

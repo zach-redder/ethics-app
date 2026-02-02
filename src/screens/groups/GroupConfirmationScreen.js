@@ -34,20 +34,20 @@ export const GroupConfirmationScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.buttonsContainer}>
+        <TouchableOpacity
+            style={styles.noButton}
+            onPress={handleReject}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.noButtonText}>No</Text>
+          </TouchableOpacity>
+          
           <TouchableOpacity
             style={styles.yesButton}
             onPress={handleConfirm}
             activeOpacity={0.85}
           >
             <Text style={styles.yesButtonText}>Yes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.noButton}
-            onPress={handleReject}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.noButtonText}>No</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: 36,
-    color: COLORS.black,
+    color: COLORS.secondary,
     fontWeight: '300',
     lineHeight: 36,
   },

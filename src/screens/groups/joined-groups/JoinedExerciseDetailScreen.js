@@ -216,7 +216,9 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
                   <View 
                     style={[
                       styles.progressOverlay,
-                      { width: `${progressPercent}%` }
+                      progressPercent === 100 
+                        ? styles.progressOverlayFull
+                        : { width: `${progressPercent}%` }
                     ]} 
                   />
                 )}
@@ -338,6 +340,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#A8D5A8',
     zIndex: 0,
+  },
+  progressOverlayFull: {
+    left: 0,
+    right: 0,
+    width: undefined,
   },
   dayContent: {
     flex: 1,

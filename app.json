@@ -4,7 +4,7 @@
     "slug": "ethics-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -17,7 +17,7 @@
       "bundleIdentifier": "com.ethicsapp.app",
       "buildNumber": "1",
       "infoPlist": {
-        "CFBundleDisplayName": "Ethics App"
+        "CFBundleDisplayName": "A Virtue a Day"
       }
     },
     "android": {
@@ -28,7 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "label": "Ethics App"
+      "label": "A Virtue a Day"
     },
     "web": {
       "favicon": "./assets/favicon.png"

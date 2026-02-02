@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: 36,
-    color: COLORS.black,
+    color: COLORS.secondary,
     fontWeight: '300',
     lineHeight: 36,
   },
@@ -314,6 +314,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 24,
+    marginBottom: 40,
   },
   button: {
     flex: 1,
@@ -330,10 +331,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   closeButtonStyle: {
-    backgroundColor: COLORS.errorLight,
+    backgroundColor: COLORS.secondary,
   },
   closeButtonText: {
-    color: COLORS.black,
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
   },

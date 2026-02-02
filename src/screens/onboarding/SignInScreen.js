@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Modal,
 } from 'react-native';
 import { COLORS } from '../../constants';
 import { authService } from '../../services';
@@ -20,6 +21,9 @@ export const SignInScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -41,6 +45,52 @@ export const SignInScreen = ({ navigation }) => {
       Alert.alert('Error', err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = () => {
+    setResetEmail(email); // Pre-fill with current email if available
+    setShowForgotPassword(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetEmail.trim()) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await authService.resetPassword(resetEmail.trim());
+
+      if (error) {
+        Alert.alert('Error', error.message || 'Failed to send password reset email');
+      } else {
+        Alert.alert(
+          'Password Reset Email Sent',
+          'Please check your email for instructions to reset your password.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setShowForgotPassword(false);
+                setResetEmail('');
+              },
+            },
+          ]
+        );
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Failed to send password reset email');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -84,7 +134,11 @@ export const SignInScreen = ({ navigation }) => {
             />
           </View>
 
-          <TouchableOpacity style={styles.forgotPassword}>
+          <TouchableOpacity 
+            style={styles.forgotPassword}
+            onPress={handleForgotPassword}
+            activeOpacity={0.7}
+          >
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
@@ -109,6 +163,75 @@ export const SignInScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showForgotPassword}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowForgotPassword(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowForgotPassword(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalContent}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text style={styles.modalTitle}>Reset Password</Text>
+              <Text style={styles.modalDescription}>
+                Enter your email address and we'll send you instructions to reset your password.
+              </Text>
+
+              <View style={styles.modalInputContainer}>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Enter your email..."
+                  placeholderTextColor={COLORS.inputPlaceholder}
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus
+                />
+              </View>
+
+              <View style={styles.modalButtonRow}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCancelButton]}
+                  onPress={() => {
+                    setShowForgotPassword(false);
+                    setResetEmail('');
+                  }}
+                  disabled={resetLoading}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalSubmitButton, resetLoading && styles.modalButtonDisabled]}
+                  onPress={handleResetPassword}
+                  disabled={resetLoading}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.modalSubmitButtonText}>
+                    {resetLoading ? 'Sending...' : 'Send Reset Link'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -194,5 +317,92 @@ const styles = StyleSheet.create({
   },
   linkBold: {
     fontWeight: 'bold',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginBottom: 12,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalInputContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modalInput: {
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: COLORS.lightGray,
+  },
+  modalCancelButtonText: {
+    color: COLORS.black,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalSubmitButton: {
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalSubmitButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
   },
 });
