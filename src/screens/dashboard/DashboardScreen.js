@@ -10,10 +10,9 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../constants';
-import { groupService } from '../../services';
+import { groupService, notificationService } from '../../services';
 import { BottomTabBar } from '../../components';
 
 /**
@@ -29,6 +28,7 @@ export const DashboardScreen = ({ navigation, route }) => {
   useEffect(() => {
     loadGroups();
     checkAndRequestNotifications();
+    scheduleExerciseNotifications();
   }, []);
 
   const checkAndRequestNotifications = async () => {
@@ -42,29 +42,23 @@ export const DashboardScreen = ({ navigation, route }) => {
       const isFromOnboarding = route.params?.fromOnboarding;
       
       if (!hasRequestedNotifications && isFromOnboarding) {
-        // Configure notification handler
-        Notifications.setNotificationHandler({
-          handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: true,
-          }),
-        });
-        
         // Request notification permissions
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
+        await notificationService.requestPermissions();
         
         // Mark that we've requested permissions (regardless of whether they granted it)
         await AsyncStorage.setItem('hasRequestedNotifications', 'true');
       }
     } catch (error) {
       console.error('Error requesting notification permissions:', error);
+    }
+  };
+
+  const scheduleExerciseNotifications = async () => {
+    try {
+      // Schedule notifications for active exercises
+      await notificationService.scheduleDailyNotifications();
+    } catch (error) {
+      console.error('Error scheduling notifications:', error);
     }
   };
 
@@ -332,13 +326,13 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flexDirection: 'row',
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.accent,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
-    shadowColor: COLORS.secondary,
+    shadowColor: COLORS.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,

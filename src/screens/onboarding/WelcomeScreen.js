@@ -18,7 +18,7 @@ export const WelcomeScreen = ({ navigation }) => {
           />
         </View>
 
-        <Text style={styles.tagline}>Ethics App</Text>
+        {/*<Text style={styles.tagline}>A Virtue a Day</Text>*/}
       </View>
 
       <TouchableOpacity

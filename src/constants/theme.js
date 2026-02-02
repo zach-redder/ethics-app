@@ -4,9 +4,13 @@
  */
 
 export const COLORS = {
-  // Primary colors (from mockups)
-  primary: '#1C5C7A',       // Dark teal button color
-  secondary: '#3A5A6B',      // Secondary darker blue-gray
+  // Primary colors
+  primary: '#036616',      // Primary dark green button color
+  
+  // Secondary and accent colors
+  secondary: '#bd1129',    // Red secondary color
+  accent: '#3d8e29',       // Lighter green accent
+  redSecondary: '#de1a24', // Alternative red for variety
 
   // Neutral colors
   white: '#FFFFFF',
@@ -16,12 +20,11 @@ export const COLORS = {
   lightGray: '#C7C7CC',
   background: '#E5E5E5',     // Light gray background from mockups
 
-  // Semantic colors
-  success: '#A8D5A8',        // Light green (Yes button)
+  // Semantic colors (keep yes/no buttons the same)
+  success: '#A8D5A8',        // Light green (Yes button - keep same)
   error: '#DC143C',          // Bright red (notification badge)
-  errorLight: '#D5A8A8',     // Light red/pink (No button)
+  errorLight: '#D5A8A8',     // Light red/pink (No button - keep same)
   warning: '#FF9500',
-  info: '#1C5C7A',
 
   // Input colors
   inputBorder: '#D0D0D0',

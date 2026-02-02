@@ -122,8 +122,8 @@ export const ProfileScreen = ({ navigation }) => {
           onPress={handleReportIssue}
           activeOpacity={0.7}
         >
-          <Ionicons name="alert-circle-outline" size={20} color={COLORS.black} />
-          <Text style={styles.menuItemText}>Report Issue</Text>
+          <Ionicons name="alert-circle-outline" size={20} color={COLORS.secondary} />
+          <Text style={[styles.menuItemText, styles.reportIssueText]}>Report Issue</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -194,6 +194,9 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: COLORS.error,
+  },
+  reportIssueText: {
+    color: COLORS.secondary,
   },
   divider: {
     height: 1,

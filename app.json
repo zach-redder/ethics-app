@@ -17,7 +17,7 @@
       "bundleIdentifier": "com.ethicsapp.app",
       "buildNumber": "2",
       "infoPlist": {
-        "CFBundleDisplayName": "Ethics App",
+        "CFBundleDisplayName": "A Virtue a Day",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -28,7 +28,8 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "label": "A Virtue a Day"
     },
     "web": {
       "favicon": "./assets/logo.png"
@@ -37,6 +38,9 @@
       "eas": {
         "projectId": "b95047b2-15bb-468d-93cf-37b88851e11c"
       }
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

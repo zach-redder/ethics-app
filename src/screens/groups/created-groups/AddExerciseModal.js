@@ -14,7 +14,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
-import { exerciseService } from '../../../services';
+import { exerciseService, notificationService } from '../../../services';
 
 /**
  * Add Exercise Modal
@@ -85,6 +85,9 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
       setInstructions('');
       setNumberOfDays('');
 
+      // Reschedule notifications after adding exercise
+      await notificationService.scheduleDailyNotifications();
+
       onExerciseAdded();
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to create exercise');
@@ -141,7 +144,10 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
             <View style={styles.dateRow}>
               <TouchableOpacity
                 style={[styles.input, styles.dateInput]}
-                onPress={() => setShowStartPicker(true)}
+                onPress={() => {
+                  setShowEndPicker(false);
+                  setShowStartPicker(true);
+                }}
               >
                 <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
                   {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
@@ -150,7 +156,10 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
               <Text style={styles.dateSeparator}>to</Text>
               <TouchableOpacity
                 style={[styles.input, styles.dateInput]}
-                onPress={() => setShowEndPicker(true)}
+                onPress={() => {
+                  setShowStartPicker(false);
+                  setShowEndPicker(true);
+                }}
               >
                 <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
                   {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
@@ -203,20 +212,23 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
         {showStartPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={startDate || new Date()}
+              value={startDate ? new Date(startDate) : new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              minimumDate={new Date()}
               onChange={(event, selectedDate) => {
                 if (Platform.OS === 'android') {
                   setShowStartPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  setStartDate(selectedDate);
-                  if (Platform.OS === 'ios') {
+                  if (event.type === 'set' && selectedDate) {
+                    setStartDate(selectedDate);
+                  }
+                } else {
+                  // iOS
+                  if (event.type === 'set' && selectedDate) {
+                    setStartDate(selectedDate);
+                  } else if (event.type === 'dismissed') {
                     setShowStartPicker(false);
                   }
-                } else if (event.type === 'dismissed') {
-                  setShowStartPicker(false);
                 }
               }}
             />
@@ -234,20 +246,23 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
         {showEndPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={endDate || new Date()}
+              value={endDate ? new Date(endDate) : (startDate ? new Date(startDate) : new Date())}
               mode="date"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              minimumDate={startDate ? new Date(startDate) : new Date()}
               onChange={(event, selectedDate) => {
                 if (Platform.OS === 'android') {
                   setShowEndPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  setEndDate(selectedDate);
-                  if (Platform.OS === 'ios') {
+                  if (event.type === 'set' && selectedDate) {
+                    setEndDate(selectedDate);
+                  }
+                } else {
+                  // iOS
+                  if (event.type === 'set' && selectedDate) {
+                    setEndDate(selectedDate);
+                  } else if (event.type === 'dismissed') {
                     setShowEndPicker(false);
                   }
-                } else if (event.type === 'dismissed') {
-                  setShowEndPicker(false);
                 }
               }}
             />
@@ -285,7 +300,7 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: 36,
-    color: COLORS.black,
+    color: COLORS.secondary,
     fontWeight: '300',
     lineHeight: 36,
   },

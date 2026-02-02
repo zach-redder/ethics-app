@@ -20,7 +20,7 @@ import {
   ReportIssueScreen,
   ReportIssueSuccessModal,
 } from './src/screens';
-import { authService, userService } from './src/services';
+import { authService, userService, notificationService } from './src/services';
 import { clearSession } from './src/services/supabase';
 import { COLORS } from './src/constants';
 
@@ -36,6 +36,8 @@ export default function App() {
 
   useEffect(() => {
     console.log('🚀 [App] Component mounted, initializing auth check');
+    // Initialize notification service early
+    notificationService.initialize();
     checkAuthStatus();
 
     // Listen to auth state changes

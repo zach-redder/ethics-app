@@ -72,7 +72,7 @@ export const ReportIssueScreen = ({ navigation, route }) => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.secondary} />
         </TouchableOpacity>
         <Text style={styles.title}>Report Issue</Text>
         <View style={styles.placeholder} />

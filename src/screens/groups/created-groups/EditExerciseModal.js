@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '../../../constants';
-import { exerciseService } from '../../../services';
+import { exerciseService, notificationService } from '../../../services';
 
 /**
  * Edit Exercise Modal
@@ -100,6 +100,9 @@ export const EditExerciseModal = ({
         return;
       }
 
+      // Reschedule notifications after updating exercise
+      await notificationService.scheduleDailyNotifications();
+
       onExerciseUpdated();
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to update exercise');
@@ -156,7 +159,10 @@ export const EditExerciseModal = ({
             <View style={styles.dateRow}>
               <TouchableOpacity
                 style={[styles.input, styles.dateInput]}
-                onPress={() => setShowStartPicker(true)}
+                onPress={() => {
+                  setShowEndPicker(false);
+                  setShowStartPicker(true);
+                }}
               >
                 <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
                   {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
@@ -165,7 +171,10 @@ export const EditExerciseModal = ({
               <Text style={styles.dateSeparator}>to</Text>
               <TouchableOpacity
                 style={[styles.input, styles.dateInput]}
-                onPress={() => setShowEndPicker(true)}
+                onPress={() => {
+                  setShowStartPicker(false);
+                  setShowEndPicker(true);
+                }}
               >
                 <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
                   {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
@@ -300,7 +309,7 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: 36,
-    color: COLORS.black,
+    color: COLORS.secondary,
     fontWeight: '300',
     lineHeight: 36,
   },

@@ -6,22 +6,22 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "simulator": true
+        "simulator": false
       }
     },
     "production": {
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "secret:EXPO_PUBLIC_SUPABASE_URL",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "secret:EXPO_PUBLIC_SUPABASE_ANON_KEY"
-      },
       "autoIncrement": true,
+      "distribution": "store",
       "ios": {
-        "buildConfiguration": "Release"
+        "simulator": false
       }
     }
   },

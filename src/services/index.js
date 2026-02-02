@@ -12,4 +12,5 @@ export { exerciseService } from './exerciseService';
 export { exerciseProgressService } from './exerciseProgressService';
 export { userExerciseCustomizationService } from './userExerciseCustomizationService';
 export { issueReportService } from './issueReportService';
+export { notificationService } from './notificationService';
 export { exampleService } from './exampleService';
