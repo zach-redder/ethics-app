@@ -53,17 +53,27 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
     }
   };
 
+  // Helper function to parse date string to local date (avoiding timezone issues)
+  const parseLocalDate = (dateString) => {
+    if (!dateString) return null;
+    // Parse YYYY-MM-DD format and create date in local timezone
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+
   const getDateRange = () => {
     if (customization) {
       return {
-        start: new Date(customization.custom_start_date),
-        end: new Date(customization.custom_end_date),
+        start: parseLocalDate(customization.custom_start_date),
+        end: parseLocalDate(customization.custom_end_date),
       };
     }
     if (exercise) {
       return {
-        start: new Date(exercise.start_date),
-        end: new Date(exercise.end_date),
+        start: parseLocalDate(exercise.start_date),
+        end: parseLocalDate(exercise.end_date),
       };
     }
     return null;
@@ -71,14 +81,29 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
 
   const getDays = () => {
     const range = getDateRange();
-    if (!range) return [];
+    if (!range || !range.start || !range.end) return [];
 
     const days = [];
-    const currentDate = new Date(range.start);
+    // Use the parsed dates directly (they're already in local timezone)
+    const startDate = new Date(range.start);
+    startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(range.end);
+    endDate.setHours(0, 0, 0, 0);
+    
+    // Start from the start date and include the end date (inclusive)
+    let currentDate = new Date(startDate);
 
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
+    // Include both start and end dates (inclusive)
+    // Compare dates by their time value to avoid timezone issues
+    const endTime = endDate.getTime();
+    
+    while (currentDate.getTime() <= endTime) {
+      // Format date as YYYY-MM-DD for database comparison
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       const dayProgress = progress.find(p => p.practice_date === dateStr);
       days.push({
         date: new Date(currentDate),
@@ -88,7 +113,9 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
         completions: dayProgress?.number_of_completions || 0,
         notes: dayProgress?.notes || null,
       });
+      // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setHours(0, 0, 0, 0);
     }
 
     return days;
@@ -218,7 +245,9 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
                       styles.progressOverlay,
                       progressPercent === 100 
                         ? styles.progressOverlayFull
-                        : { width: `${progressPercent}%` }
+                        : { 
+                            width: `${progressPercent}%`,
+                          }
                     ]} 
                   />
                 )}

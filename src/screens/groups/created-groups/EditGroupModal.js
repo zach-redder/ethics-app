@@ -141,7 +141,10 @@ export const EditGroupModal = ({ visible, group, onClose, onGroupUpdated }) => {
             <Text style={styles.label}>Start Date (optional)</Text>
             <TouchableOpacity
               style={styles.dateInputContainer}
-              onPress={() => setShowStartPicker(true)}
+              onPress={() => {
+                setShowEndPicker(false);
+                setShowStartPicker(true);
+              }}
             >
               <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
                 {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
@@ -159,7 +162,10 @@ export const EditGroupModal = ({ visible, group, onClose, onGroupUpdated }) => {
             <Text style={styles.label}>End Date (optional)</Text>
             <TouchableOpacity
               style={styles.dateInputContainer}
-              onPress={() => setShowEndPicker(true)}
+              onPress={() => {
+                setShowStartPicker(false);
+                setShowEndPicker(true);
+              }}
             >
               <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
                 {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}

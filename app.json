@@ -17,7 +17,8 @@
       "bundleIdentifier": "com.ethicsapp.app",
       "buildNumber": "1",
       "infoPlist": {
-        "CFBundleDisplayName": "A Virtue a Day"
+        "CFBundleDisplayName": "A Virtue a Day",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -35,8 +36,11 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "b95047b2-15bb-468d-93cf-37b88851e11c"
       }
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

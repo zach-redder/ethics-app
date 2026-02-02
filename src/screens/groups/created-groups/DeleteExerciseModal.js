@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { COLORS } from '../../../constants';
-import { exerciseService } from '../../../services';
+import { exerciseService, notificationService } from '../../../services';
 
 /**
  * Delete Exercise Modal
@@ -32,6 +32,9 @@ export const DeleteExerciseModal = ({
         setLoading(false);
         return;
       }
+
+      // Reschedule notifications after deleting exercise
+      await notificationService.scheduleDailyNotifications();
 
       onExerciseDeleted();
     } catch (error) {

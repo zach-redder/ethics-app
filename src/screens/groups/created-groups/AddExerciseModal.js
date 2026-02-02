@@ -14,7 +14,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
-import { exerciseService } from '../../../services';
+import { exerciseService, notificationService } from '../../../services';
 
 /**
  * Add Exercise Modal
@@ -85,6 +85,9 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
       setInstructions('');
       setNumberOfDays('');
 
+      // Reschedule notifications after adding exercise
+      await notificationService.scheduleDailyNotifications();
+
       onExerciseAdded();
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to create exercise');
@@ -141,7 +144,10 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
             <View style={styles.dateRow}>
               <TouchableOpacity
                 style={[styles.input, styles.dateInput]}
-                onPress={() => setShowStartPicker(true)}
+                onPress={() => {
+                  setShowEndPicker(false);
+                  setShowStartPicker(true);
+                }}
               >
                 <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
                   {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
@@ -150,7 +156,10 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
               <Text style={styles.dateSeparator}>to</Text>
               <TouchableOpacity
                 style={[styles.input, styles.dateInput]}
-                onPress={() => setShowEndPicker(true)}
+                onPress={() => {
+                  setShowStartPicker(false);
+                  setShowEndPicker(true);
+                }}
               >
                 <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
                   {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}

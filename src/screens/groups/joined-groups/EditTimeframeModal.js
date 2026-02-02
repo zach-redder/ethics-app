@@ -23,15 +23,80 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [daysError, setDaysError] = useState(null);
+  const [customization, setCustomization] = useState(null);
 
+  // Helper function to parse date string to local date (avoiding timezone issues)
+  const parseLocalDate = (dateString) => {
+    if (!dateString) return null;
+    // Parse YYYY-MM-DD format and create date in local timezone
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+
+  // Load existing customization when modal opens
   useEffect(() => {
-    if (exercise) {
-      const exerciseStart = new Date(exercise.start_date);
-      const exerciseEnd = new Date(exercise.end_date);
-      setStartDate(exerciseStart);
-      setEndDate(exerciseEnd);
-    }
-  }, [exercise]);
+    const loadCustomization = async () => {
+      if (exercise && visible) {
+        try {
+          const result = await userExerciseCustomizationService.getCustomization(exercise.id);
+          if (result.data) {
+            setCustomization(result.data);
+            // Use saved customization dates
+            const customStart = parseLocalDate(result.data.custom_start_date);
+            const customEnd = parseLocalDate(result.data.custom_end_date);
+            if (customStart && customEnd) {
+              setStartDate(customStart);
+              setEndDate(customEnd);
+            }
+          } else {
+            // No customization exists, use exercise defaults
+            setCustomization(null);
+            const exerciseStart = parseLocalDate(exercise.start_date);
+            const exerciseEnd = parseLocalDate(exercise.end_date);
+            if (exerciseStart && exerciseEnd) {
+              setStartDate(exerciseStart);
+              // If number_of_days is set, calculate end date based on it
+              if (exercise.number_of_days) {
+                const calculatedEnd = new Date(exerciseStart);
+                calculatedEnd.setDate(calculatedEnd.getDate() + exercise.number_of_days - 1);
+                calculatedEnd.setHours(0, 0, 0, 0);
+                // Make sure it doesn't exceed exercise end date
+                const maxEnd = parseLocalDate(exercise.end_date);
+                if (calculatedEnd <= maxEnd) {
+                  setEndDate(calculatedEnd);
+                } else {
+                  setEndDate(maxEnd);
+                }
+              } else {
+                setEndDate(exerciseEnd);
+              }
+            }
+          }
+          setDaysError(null);
+        } catch (error) {
+          console.error('Error loading customization:', error);
+          // Fallback to exercise dates on error
+          const exerciseStart = parseLocalDate(exercise.start_date);
+          const exerciseEnd = parseLocalDate(exercise.end_date);
+          if (exerciseStart && exerciseEnd) {
+            setStartDate(exerciseStart);
+            setEndDate(exerciseEnd);
+          }
+        }
+      } else if (!visible) {
+        // Reset state when modal closes
+        setStartDate(null);
+        setEndDate(null);
+        setDaysError(null);
+        setCustomization(null);
+      }
+    };
+
+    loadCustomization();
+  }, [exercise, visible]);
 
   const formatDate = (date) => {
     if (!date) return '';
@@ -43,7 +108,78 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
 
   const formatDateForDB = (date) => {
     if (!date) return null;
-    return date.toISOString().split('T')[0];
+    // Format date as YYYY-MM-DD in local timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Calculate number of days between two dates (inclusive)
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 0;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    const diffTime = endDate - startDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // +1 to include both start and end dates
+  };
+
+  // Auto-adjust end date when start date changes
+  const handleStartDateChange = (selectedDate) => {
+    if (!selectedDate) return;
+    
+    const newStart = new Date(selectedDate);
+    newStart.setHours(0, 0, 0, 0);
+    setStartDate(newStart);
+    
+    // If number_of_days is required, auto-calculate end date
+    if (exercise?.number_of_days) {
+      const exerciseStart = parseLocalDate(exercise.start_date);
+      const exerciseEnd = parseLocalDate(exercise.end_date);
+      
+      const calculatedEnd = new Date(newStart);
+      calculatedEnd.setDate(calculatedEnd.getDate() + exercise.number_of_days - 1);
+      calculatedEnd.setHours(0, 0, 0, 0);
+      
+      // Make sure calculated end date is within exercise bounds
+      const endTime = exerciseEnd.getTime();
+      const calcTime = calculatedEnd.getTime();
+      const startTime = newStart.getTime();
+      
+      if (calcTime <= endTime && calcTime >= startTime) {
+        setEndDate(calculatedEnd);
+        setDaysError(null);
+      } else {
+        // If it exceeds bounds, set to exercise end and show error
+        setEndDate(exerciseEnd);
+        const actualDays = calculateDays(newStart, exerciseEnd);
+        if (actualDays !== exercise.number_of_days) {
+          setDaysError(`Selected start date doesn't allow ${exercise.number_of_days} days. Maximum available: ${actualDays} days.`);
+        }
+      }
+    }
+  };
+
+  // Validate end date when it changes
+  const handleEndDateChange = (selectedDate) => {
+    if (!selectedDate) return;
+    
+    const newEnd = new Date(selectedDate);
+    newEnd.setHours(0, 0, 0, 0);
+    setEndDate(newEnd);
+    
+    // Validate number of days if required
+    if (exercise?.number_of_days && startDate) {
+      const actualDays = calculateDays(startDate, newEnd);
+      if (actualDays !== exercise.number_of_days) {
+        setDaysError(`Timeframe must be exactly ${exercise.number_of_days} days. Currently: ${actualDays} days.`);
+      } else {
+        setDaysError(null);
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -53,34 +189,46 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
     }
 
     // Validate dates are within exercise bounds
-    const exerciseStart = new Date(exercise.start_date);
-    const exerciseEnd = new Date(exercise.end_date);
-    exerciseStart.setHours(0, 0, 0, 0);
-    exerciseEnd.setHours(0, 0, 0, 0);
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(0, 0, 0, 0);
+    const exerciseStart = parseLocalDate(exercise.start_date);
+    const exerciseEnd = parseLocalDate(exercise.end_date);
+    const normalizedStart = new Date(startDate);
+    normalizedStart.setHours(0, 0, 0, 0);
+    const normalizedEnd = new Date(endDate);
+    normalizedEnd.setHours(0, 0, 0, 0);
 
-    if (startDate < exerciseStart || startDate > exerciseEnd) {
+    if (normalizedStart < exerciseStart || normalizedStart > exerciseEnd) {
       Alert.alert('Error', 'Start date must be within the exercise date range');
       return;
     }
 
-    if (endDate < exerciseStart || endDate > exerciseEnd) {
+    if (normalizedEnd < exerciseStart || normalizedEnd > exerciseEnd) {
       Alert.alert('Error', 'End date must be within the exercise date range');
       return;
     }
 
-    if (endDate < startDate) {
+    if (normalizedEnd < normalizedStart) {
       Alert.alert('Error', 'End date must be after start date');
       return;
+    }
+
+    // Validate number of days if required
+    if (exercise.number_of_days) {
+      const actualDays = calculateDays(normalizedStart, normalizedEnd);
+      if (actualDays !== exercise.number_of_days) {
+        Alert.alert(
+          'Invalid Timeframe',
+          `This exercise requires exactly ${exercise.number_of_days} days. Your selected timeframe is ${actualDays} days. Please adjust your dates.`
+        );
+        return;
+      }
     }
 
     setLoading(true);
     try {
       const { error } = await userExerciseCustomizationService.upsertCustomization(
         exercise.id,
-        formatDateForDB(startDate),
-        formatDateForDB(endDate)
+        formatDateForDB(normalizedStart),
+        formatDateForDB(normalizedEnd)
       );
 
       if (error) {
@@ -98,8 +246,8 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
 
   if (!exercise) return null;
 
-  const exerciseStart = new Date(exercise.start_date);
-  const exerciseEnd = new Date(exercise.end_date);
+  const exerciseStart = parseLocalDate(exercise.start_date);
+  const exerciseEnd = parseLocalDate(exercise.end_date);
 
   return (
     <Modal
@@ -129,10 +277,39 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
             {formatDate(exerciseStart)} - {formatDate(exerciseEnd)}
           </Text>
 
+          {exercise.number_of_days && (
+            <View style={styles.requirementContainer}>
+              <Text style={styles.requirementText}>
+                <Text style={styles.requirementBold}>Required: {exercise.number_of_days} days</Text>
+              </Text>
+              {startDate && endDate && (
+                <Text style={styles.currentDaysText}>
+                  Your timeframe: {calculateDays(startDate, endDate)} days
+                </Text>
+              )}
+            </View>
+          )}
+          
+          {!exercise.number_of_days && (
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoLabel}>No specific day requirement</Text>
+              <Text style={styles.infoSubtext}>You can choose any date range within the exercise period</Text>
+            </View>
+          )}
+
+          {daysError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{daysError}</Text>
+            </View>
+          )}
+
           <View style={styles.dateRow}>
             <TouchableOpacity
               style={styles.dateInput}
-              onPress={() => setShowStartPicker(true)}
+              onPress={() => {
+                setShowEndPicker(false);
+                setShowStartPicker(true);
+              }}
             >
               <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
                 {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
@@ -141,7 +318,10 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
             <Text style={styles.dateSeparator}>to</Text>
             <TouchableOpacity
               style={styles.dateInput}
-              onPress={() => setShowEndPicker(true)}
+              onPress={() => {
+                setShowStartPicker(false);
+                setShowEndPicker(true);
+              }}
             >
               <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
                 {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
@@ -152,9 +332,9 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
 
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
+            style={[styles.button, styles.saveButton, (loading || daysError) && styles.saveButtonDisabled]}
             onPress={handleSave}
-            disabled={loading}
+            disabled={loading || !!daysError}
             activeOpacity={0.85}
           >
             <Text style={styles.saveButtonText}>Save</Text>
@@ -172,17 +352,26 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
         {showStartPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={startDate || exerciseStart}
+              value={startDate || exerciseStart || new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
               minimumDate={exerciseStart}
-              maximumDate={exerciseEnd}
+              maximumDate={
+                exercise.number_of_days
+                  ? (() => {
+                      const maxStart = new Date(exerciseEnd);
+                      maxStart.setDate(maxStart.getDate() - exercise.number_of_days + 1);
+                      maxStart.setHours(0, 0, 0, 0);
+                      return maxStart < exerciseStart ? exerciseStart : maxStart;
+                    })()
+                  : exerciseEnd
+              }
               onChange={(event, selectedDate) => {
                 if (Platform.OS === 'android') {
                   setShowStartPicker(false);
                 }
                 if (event.type === 'set' && selectedDate) {
-                  setStartDate(selectedDate);
+                  handleStartDateChange(selectedDate);
                   if (Platform.OS === 'ios') {
                     setShowStartPicker(false);
                   }
@@ -205,17 +394,26 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
         {showEndPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={endDate || exerciseEnd}
+              value={endDate || exerciseEnd || new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
               minimumDate={startDate || exerciseStart}
-              maximumDate={exerciseEnd}
+              maximumDate={
+                exercise.number_of_days && startDate
+                  ? (() => {
+                      const maxEnd = new Date(startDate);
+                      maxEnd.setDate(maxEnd.getDate() + exercise.number_of_days - 1);
+                      maxEnd.setHours(0, 0, 0, 0);
+                      return maxEnd > exerciseEnd ? exerciseEnd : maxEnd;
+                    })()
+                  : exerciseEnd
+              }
               onChange={(event, selectedDate) => {
                 if (Platform.OS === 'android') {
                   setShowEndPicker(false);
                 }
                 if (event.type === 'set' && selectedDate) {
-                  setEndDate(selectedDate);
+                  handleEndDateChange(selectedDate);
                   if (Platform.OS === 'ios') {
                     setShowEndPicker(false);
                   }
@@ -284,7 +482,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.black,
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  requirementContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  requirementText: {
+    fontSize: 14,
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  requirementBold: {
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  currentDaysText: {
+    fontSize: 13,
+    color: COLORS.gray,
+    marginTop: 4,
+  },
+  infoContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  infoSubtext: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  errorContainer: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.error,
+  },
+  errorText: {
+    fontSize: 13,
+    color: COLORS.error,
   },
   dateRow: {
     flexDirection: 'row',
@@ -324,6 +572,9 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#A8D5A8',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   saveButtonText: {
     color: COLORS.black,

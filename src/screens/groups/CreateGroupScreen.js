@@ -130,7 +130,10 @@ export const CreateGroupScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Start Date (optional)</Text>
           <TouchableOpacity
             style={styles.dateInputContainer}
-            onPress={() => setShowStartPicker(true)}
+            onPress={() => {
+              setShowEndPicker(false);
+              setShowStartPicker(true);
+            }}
           >
             <Text style={[styles.dateText, !startDate && styles.placeholderText]}>
               {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
@@ -155,7 +158,10 @@ export const CreateGroupScreen = ({ navigation, route }) => {
           <Text style={styles.label}>End Date (optional)</Text>
           <TouchableOpacity
             style={styles.dateInputContainer}
-            onPress={() => setShowEndPicker(true)}
+            onPress={() => {
+              setShowStartPicker(false);
+              setShowEndPicker(true);
+            }}
           >
             <Text style={[styles.dateText, !endDate && styles.placeholderText]}>
               {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
