@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.9.0"
+    "version": ">= 5.9.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -14,26 +15,17 @@
       }
     },
     "production": {
-      "ios": {
-        "bundleIdentifier": "com.ethicsapp.app"
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "secret:EXPO_PUBLIC_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "secret:EXPO_PUBLIC_SUPABASE_ANON_KEY"
       },
-      "android": {
-        "package": "com.ethicsapp.app"
+      "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Release"
       }
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "your-apple-team-id"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./path/to/api-key.json",
-        "track": "internal"
-      }
-    }
+    "production": {}
   }
 }
-

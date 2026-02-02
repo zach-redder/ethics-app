@@ -4,38 +4,38 @@
     "slug": "ethics-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ethicsapp.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
-        "CFBundleDisplayName": "Ethics App"
+        "CFBundleDisplayName": "Ethics App",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.ethicsapp.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "label": "Ethics App"
+      "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo.png"
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "b95047b2-15bb-468d-93cf-37b88851e11c"
       }
     }
   }
