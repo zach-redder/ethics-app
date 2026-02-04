@@ -27,7 +27,8 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
   const [endDate, setEndDate] = useState(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  const [frequency, setFrequency] = useState('');
+  const [frequencyMin, setFrequencyMin] = useState('');
+  const [frequencyMax, setFrequencyMax] = useState('');
   const [instructions, setInstructions] = useState('');
   const [numberOfDays, setNumberOfDays] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,6 +56,37 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
       return;
     }
 
+    // Validate frequency range if provided
+    let frequencyValue = null;
+    if (frequencyMin.trim() || frequencyMax.trim()) {
+      const min = frequencyMin.trim() ? parseInt(frequencyMin.trim(), 10) : null;
+      const max = frequencyMax.trim() ? parseInt(frequencyMax.trim(), 10) : null;
+      
+      if (min !== null && max !== null) {
+        if (min < 1 || max < 1) {
+          Alert.alert('Error', 'Frequency values must be at least 1');
+          return;
+        }
+        if (min > max) {
+          Alert.alert('Error', 'Minimum frequency cannot be greater than maximum');
+          return;
+        }
+        frequencyValue = min === max ? min.toString() : `${min}-${max}`;
+      } else if (min !== null) {
+        if (min < 1) {
+          Alert.alert('Error', 'Frequency value must be at least 1');
+          return;
+        }
+        frequencyValue = min.toString();
+      } else if (max !== null) {
+        if (max < 1) {
+          Alert.alert('Error', 'Frequency value must be at least 1');
+          return;
+        }
+        frequencyValue = max.toString();
+      }
+    }
+
     const startDateDB = formatDateForDB(startDate);
     const endDateDB = formatDateForDB(endDate);
 
@@ -67,7 +99,7 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
         instructions: instructions.trim() || null,
         start_date: startDateDB,
         end_date: endDateDB,
-        frequency_per_day: frequency ? parseInt(frequency) : null,
+        frequency_per_day: frequencyValue,
         number_of_days: numberOfDays ? parseInt(numberOfDays) : null,
       });
 
@@ -81,7 +113,8 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
       setDescription('');
       setStartDate(null);
       setEndDate(null);
-      setFrequency('');
+      setFrequencyMin('');
+      setFrequencyMax('');
       setInstructions('');
       setNumberOfDays('');
 
@@ -170,14 +203,31 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
 
           <View style={styles.section}>
             <Text style={styles.label}>Frequency Per Day</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter frequency per day..."
-              value={frequency}
-              onChangeText={setFrequency}
-              keyboardType="numeric"
-              placeholderTextColor={COLORS.inputPlaceholder}
-            />
+            <View style={styles.frequencyRow}>
+              <View style={styles.frequencyInputContainer}>
+                <Text style={styles.frequencyLabel}>Min</Text>
+                <TextInput
+                  style={styles.frequencyInput}
+                  placeholder="Min"
+                  value={frequencyMin}
+                  onChangeText={setFrequencyMin}
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.inputPlaceholder}
+                />
+              </View>
+              <Text style={styles.frequencySeparator}>-</Text>
+              <View style={styles.frequencyInputContainer}>
+                <Text style={styles.frequencyLabel}>Max</Text>
+                <TextInput
+                  style={styles.frequencyInput}
+                  placeholder="Max"
+                  value={frequencyMax}
+                  onChangeText={setFrequencyMax}
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.inputPlaceholder}
+                />
+              </View>
+            </View>
             <Text style={styles.label}>Number of Days</Text>
             <TextInput
               style={styles.input}
@@ -391,6 +441,36 @@ const styles = StyleSheet.create({
   dateSeparator: {
     fontSize: 16,
     color: COLORS.black,
+  },
+  frequencyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    marginBottom: 12,
+  },
+  frequencyInputContainer: {
+    flex: 1,
+  },
+  frequencyLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 6,
+  },
+  frequencyInput: {
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: COLORS.black,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+  },
+  frequencySeparator: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginBottom: 12,
   },
   addButton: {
     backgroundColor: COLORS.primary,

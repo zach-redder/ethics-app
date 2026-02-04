@@ -90,4 +90,93 @@ export const formatters = {
       currency: currency,
     }).format(amount);
   },
+
+  /**
+   * Parse frequency range string (e.g., "3-5" or "3")
+   * @param {string} frequencyRange - Range string like "3-5" or single number "3"
+   * @returns {object} { min, max } or null if invalid
+   */
+  parseFrequencyRange: (frequencyRange) => {
+    if (!frequencyRange || typeof frequencyRange !== 'string') return null;
+    
+    const trimmed = frequencyRange.trim();
+    if (!trimmed) return null;
+
+    // Check if it's a range format (e.g., "3-5")
+    const rangeMatch = trimmed.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+      const min = parseInt(rangeMatch[1], 10);
+      const max = parseInt(rangeMatch[2], 10);
+      if (min > 0 && max >= min) {
+        return { min, max };
+      }
+      return null;
+    }
+
+    // Check if it's a single number
+    const singleMatch = trimmed.match(/^(\d+)$/);
+    if (singleMatch) {
+      const value = parseInt(singleMatch[1], 10);
+      if (value > 0) {
+        return { min: value, max: value };
+      }
+      return null;
+    }
+
+    return null;
+  },
+
+  /**
+   * Format frequency range for display (e.g., "3-5" or "3")
+   * @param {string} frequencyRange - Range string like "3-5" or single number "3"
+   * @returns {string} Formatted string for display
+   */
+  formatFrequencyRange: (frequencyRange) => {
+    if (!frequencyRange) return '';
+    const parsed = formatters.parseFrequencyRange(frequencyRange);
+    if (!parsed) return frequencyRange; // Return original if can't parse
+    
+    if (parsed.min === parsed.max) {
+      return parsed.min.toString();
+    }
+    return `${parsed.min}-${parsed.max}`;
+  },
+
+  /**
+   * Check if a completion count is within the frequency range
+   * @param {string} frequencyRange - Range string like "3-5"
+   * @param {number} completions - Number of completions
+   * @returns {boolean} True if completions is within range
+   */
+  isWithinFrequencyRange: (frequencyRange, completions) => {
+    if (!frequencyRange) return false;
+    const parsed = formatters.parseFrequencyRange(frequencyRange);
+    if (!parsed) return false;
+    
+    return completions >= parsed.min && completions <= parsed.max;
+  },
+
+  /**
+   * Get the maximum value from a frequency range
+   * @param {string} frequencyRange - Range string like "3-5"
+   * @returns {number} Maximum value or 0 if invalid
+   */
+  getMaxFrequency: (frequencyRange) => {
+    if (!frequencyRange) return 0;
+    const parsed = formatters.parseFrequencyRange(frequencyRange);
+    if (!parsed) return 0;
+    return parsed.max;
+  },
+
+  /**
+   * Get the minimum value from a frequency range
+   * @param {string} frequencyRange - Range string like "3-5"
+   * @returns {number} Minimum value or 0 if invalid
+   */
+  getMinFrequency: (frequencyRange) => {
+    if (!frequencyRange) return 0;
+    const parsed = formatters.parseFrequencyRange(frequencyRange);
+    if (!parsed) return 0;
+    return parsed.min;
+  },
 };

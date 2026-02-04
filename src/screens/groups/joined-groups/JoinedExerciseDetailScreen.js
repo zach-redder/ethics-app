@@ -13,6 +13,7 @@ import { exerciseService, exerciseProgressService, userExerciseCustomizationServ
 import { BottomTabBar } from '../../../components';
 import { JoinedExerciseMenuModal } from './JoinedExerciseMenuModal';
 import { DayNotesModal } from './DayNotesModal';
+import { formatters } from '../../../utils';
 
 /**
  * Joined Exercise Detail Screen
@@ -223,9 +224,9 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
             const isFirst = index === 0;
             const isLast = index === days.length - 1;
             const showCheckmark = day.isCompleted;
-            const frequency = exercise.frequency_per_day || 1;
-            const progressPercent = frequency > 1 && day.completions > 0 
-              ? Math.min((day.completions / frequency) * 100, 100) 
+            const maxFrequency = formatters.getMaxFrequency(exercise.frequency_per_day) || 1;
+            const progressPercent = maxFrequency > 1 && day.completions > 0 
+              ? Math.min((day.completions / maxFrequency) * 100, 100) 
               : (day.isCompleted ? 100 : 0);
 
             return (

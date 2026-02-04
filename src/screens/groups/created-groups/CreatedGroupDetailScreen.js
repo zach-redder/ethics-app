@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
-  Modal,
+  ScrollView,
+  PanResponder,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
-import { groupService, exerciseService } from '../../../services';
-import { formatters } from '../../../utils';
+import { groupService, exerciseService, supabase } from '../../../services';
 import { BottomTabBar } from '../../../components';
 import { AddExerciseModal } from './AddExerciseModal';
 import { GroupSettingsModal } from './GroupSettingsModal';
+
+const CARD_HEIGHT = 120; // Approximate height of each exercise card
+const CARD_MARGIN = 16;
 
 /**
  * Created Group Detail Screen
@@ -27,6 +31,59 @@ export const CreatedGroupDetailScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [draggingIndex, setDraggingIndex] = useState(null);
+  const scrollViewRef = useRef(null);
+  const cardPositions = useRef({});
+  const cardRefs = useRef({});
+  const exercisesRef = useRef(exercises);
+  const draggingFromIndexRef = useRef(null);
+  const draggingExerciseIdRef = useRef(null);
+  const animValuesRef = useRef({});
+
+  exercisesRef.current = exercises;
+
+  const getOrCreateAnimValues = (exerciseId) => {
+    if (!animValuesRef.current[exerciseId]) {
+      animValuesRef.current[exerciseId] = {
+        scale: new Animated.Value(1),
+        opacity: new Animated.Value(1),
+      };
+    }
+    return animValuesRef.current[exerciseId];
+  };
+
+  const animateDragStart = (exerciseId) => {
+    const anim = getOrCreateAnimValues(exerciseId);
+    Animated.parallel([
+      Animated.timing(anim.scale, {
+        toValue: 1.02,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(anim.opacity, {
+        toValue: 0.92,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateDragEnd = (exerciseId) => {
+    const anim = getOrCreateAnimValues(exerciseId);
+    Animated.parallel([
+      Animated.timing(anim.scale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(anim.opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   useEffect(() => {
     if (groupId) {
@@ -42,8 +99,20 @@ export const CreatedGroupDetailScreen = ({ navigation, route }) => {
         exerciseService.getExercisesByGroup(groupId),
       ]);
 
-      if (groupResult.data) setGroup(groupResult.data);
-      if (exercisesResult.data) setExercises(exercisesResult.data);
+      if (groupResult.data) {
+        setGroup(groupResult.data);
+        // Check if current user is the owner
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsOwner(user && groupResult.data.owner_id === user.id);
+      }
+      if (exercisesResult.data) {
+        // Ensure all exercises have display_order
+        const exercisesWithOrder = exercisesResult.data.map((ex, index) => ({
+          ...ex,
+          display_order: ex.display_order || index + 1,
+        }));
+        setExercises(exercisesWithOrder);
+      }
     } catch (error) {
       console.error('Error loading group data:', error);
     } finally {
@@ -77,6 +146,163 @@ export const CreatedGroupDetailScreen = ({ navigation, route }) => {
 
   const isExerciseActive = (exercise) => {
     return exerciseService.isExerciseActive(exercise);
+  };
+
+  const updateOrder = async (newExercises) => {
+    // Update local state immediately
+    setExercises(newExercises);
+    
+    // Update order in database
+    const exerciseOrders = newExercises.map((exercise, index) => ({
+      id: exercise.id,
+      display_order: index + 1,
+    }));
+
+    const { error } = await exerciseService.updateExerciseOrder(groupId, exerciseOrders);
+    if (error) {
+      console.error('Error updating exercise order:', error);
+      // Reload on error to restore correct order
+      loadGroupData();
+    }
+  };
+
+  const createPanResponder = (index, exerciseId) => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => isOwner,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return isOwner && Math.abs(gestureState.dy) > 8;
+      },
+      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+        return isOwner && Math.abs(gestureState.dy) > 8;
+      },
+      onPanResponderGrant: () => {
+        draggingFromIndexRef.current = index;
+        draggingExerciseIdRef.current = exerciseId;
+        setDraggingIndex(index);
+        animateDragStart(exerciseId);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const fromIndex = draggingFromIndexRef.current;
+        if (fromIndex === null || fromIndex === undefined) return;
+
+        const moveY = gestureState.moveY;
+        const positions = cardPositions.current;
+        const list = exercisesRef.current;
+        if (!list || list.length === 0) return;
+
+        // Build sorted list of slot centers (by position on screen)
+        const entries = list
+          .map((_, i) => ({ index: i, layout: positions[i] }))
+          .filter((e) => e.layout && e.layout.height != null)
+          .map((e) => ({ index: e.index, centerY: e.layout.y + e.layout.height / 2 }))
+          .sort((a, b) => a.centerY - b.centerY);
+
+        if (entries.length === 0) return;
+
+        let targetIndex = fromIndex;
+        for (let i = 0; i < entries.length; i++) {
+          if (moveY <= entries[i].centerY) {
+            targetIndex = entries[i].index;
+            break;
+          }
+          targetIndex = entries[i].index;
+        }
+
+        if (targetIndex !== fromIndex && targetIndex >= 0 && targetIndex < list.length) {
+          const newExercises = [...list];
+          const [removed] = newExercises.splice(fromIndex, 1);
+          newExercises.splice(targetIndex, 0, removed);
+          exercisesRef.current = newExercises;
+          setExercises(newExercises);
+          draggingFromIndexRef.current = targetIndex;
+        }
+      },
+      onPanResponderRelease: () => {
+        const exerciseId = draggingExerciseIdRef.current;
+        if (exerciseId) animateDragEnd(exerciseId);
+        draggingExerciseIdRef.current = null;
+        const list = exercisesRef.current;
+        if (draggingFromIndexRef.current !== null && list.length > 0) {
+          updateOrder(list);
+        }
+        draggingFromIndexRef.current = null;
+        setDraggingIndex(null);
+      },
+    });
+  };
+
+  const renderExerciseItem = (exercise, index) => {
+    const panResponder = isOwner ? createPanResponder(index, exercise.id) : null;
+    const isDragging = draggingIndex === index;
+    const panHandlers = panResponder?.panHandlers || {};
+    const anim = getOrCreateAnimValues(exercise.id);
+
+    return (
+      <View
+        key={exercise.id}
+        ref={(el) => { cardRefs.current[index] = el; }}
+        onLayout={() => {
+          const node = cardRefs.current[index];
+          if (node && node.measureInWindow) {
+            node.measureInWindow((x, y, width, height) => {
+              cardPositions.current[index] = { y, height };
+            });
+          }
+        }}
+        style={[
+          styles.exerciseCardWrapper,
+          isDragging && styles.exerciseCardDragging,
+        ]}
+        {...panHandlers}
+      >
+        <Animated.View
+          style={[
+            styles.exerciseCard,
+            isExerciseActive(exercise)
+              ? styles.exerciseCardActive
+              : styles.exerciseCardInactive,
+            {
+              opacity: anim.opacity,
+              transform: [{ scale: anim.scale }],
+            },
+          ]}
+        >
+          {isOwner && (
+            <TouchableOpacity
+              style={styles.dragHandle}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="reorder-three-outline" size={24} color={COLORS.black} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.exerciseContent}
+            onPress={() =>
+              !isDragging &&
+              navigation.navigate('ExerciseDetail', { 
+                exerciseId: exercise.id,
+                groupId: groupId 
+              })
+            }
+            activeOpacity={0.7}
+          >
+            <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+            <Text style={styles.exerciseDescription} numberOfLines={2}>
+              {exercise.description || 'No description'}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.exerciseDates}>
+            <Text style={styles.dateText}>
+              Starts: {formatDate(exercise.start_date)}
+            </Text>
+            <Text style={styles.dateText}>
+              Ends: {formatDate(exercise.end_date)}
+            </Text>
+          </View>
+        </Animated.View>
+      </View>
+    );
   };
 
   if (loading) {
@@ -134,44 +360,19 @@ export const CreatedGroupDetailScreen = ({ navigation, route }) => {
         {group.group_code}
       </Text>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.contentWrapper} 
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={draggingIndex === null}
+      >
         {exercises.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No exercises yet!</Text>
           </View>
         ) : (
-          exercises.map((exercise) => (
-            <TouchableOpacity
-              key={exercise.id}
-              style={[
-                styles.exerciseCard,
-                isExerciseActive(exercise)
-                  ? styles.exerciseCardActive
-                  : styles.exerciseCardInactive,
-              ]}
-              onPress={() =>
-                navigation.navigate('ExerciseDetail', { 
-                  exerciseId: exercise.id,
-                  groupId: groupId 
-                })
-              }
-            >
-              <View style={styles.exerciseContent}>
-                <Text style={styles.exerciseTitle}>{exercise.title}</Text>
-                <Text style={styles.exerciseDescription} numberOfLines={2}>
-                  {exercise.description || 'No description'}
-                </Text>
-              </View>
-              <View style={styles.exerciseDates}>
-                <Text style={styles.dateText}>
-                  Starts: {formatDate(exercise.start_date)}
-                </Text>
-                <Text style={styles.dateText}>
-                  Ends: {formatDate(exercise.end_date)}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))
+          exercises.map((exercise, index) => renderExerciseItem(exercise, index))
         )}
       </ScrollView>
 
@@ -243,9 +444,12 @@ const styles = StyleSheet.create({
   groupCodeLabel: {
     fontWeight: 'bold',
   },
-  content: {
+  contentWrapper: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: 24,
+    paddingBottom: 20,
   },
   emptyContainer: {
     backgroundColor: COLORS.white,
@@ -253,6 +457,7 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
     marginTop: 40,
+    marginHorizontal: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -263,17 +468,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.gray,
   },
+  exerciseCardWrapper: {
+    marginBottom: CARD_MARGIN,
+  },
   exerciseCard: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
     flexDirection: 'row',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+  },
+  exerciseCardDragging: {
+    zIndex: 1000,
+  },
+  dragHandle: {
+    marginRight: 12,
+    padding: 4,
+    justifyContent: 'center',
   },
   exerciseCardActive: {
     backgroundColor: '#A8D5A8',
@@ -332,4 +548,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
 import { exerciseProgressService } from '../../../services';
+import { formatters } from '../../../utils';
 
 /**
  * Day Notes Modal
@@ -64,8 +65,9 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
   };
 
   const handleAddOne = async () => {
-    if (exercise.frequency_per_day && day.completions >= exercise.frequency_per_day) {
-      Alert.alert('Info', 'You have reached the required frequency for this day');
+    const maxFrequency = formatters.getMaxFrequency(exercise.frequency_per_day);
+    if (maxFrequency > 0 && day.completions >= maxFrequency) {
+      Alert.alert('Info', 'You have reached the maximum frequency for this day');
       return;
     }
 
@@ -73,7 +75,9 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
     try {
       // Add one completion
       const newCompletions = (day.completions || 0) + 1;
-      const shouldComplete = exercise.frequency_per_day && newCompletions >= exercise.frequency_per_day;
+      const minFrequency = formatters.getMinFrequency(exercise.frequency_per_day);
+      // Complete if we've reached at least the minimum frequency
+      const shouldComplete = minFrequency > 0 && newCompletions >= minFrequency;
       
       // Update progress with new completion count
       await exerciseProgressService.upsertProgress(exercise.id, day.dateStr, {
@@ -159,7 +163,7 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
           <TouchableOpacity
             style={[styles.actionButton, styles.addButton]}
             onPress={handleAddOne}
-            disabled={loading || (exercise.frequency_per_day && day.completions >= exercise.frequency_per_day)}
+            disabled={loading || (formatters.getMaxFrequency(exercise.frequency_per_day) > 0 && day.completions >= formatters.getMaxFrequency(exercise.frequency_per_day))}
             activeOpacity={0.85}
           >
             <Text style={styles.addButtonText}>+1</Text>

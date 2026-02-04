@@ -16,6 +16,18 @@ export const exerciseService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Get the next display_order value for this group
+      const { data: existingExercises } = await supabase
+        .from('exercises')
+        .select('display_order')
+        .eq('group_id', exerciseData.group_id)
+        .order('display_order', { ascending: false })
+        .limit(1);
+
+      const nextOrder = existingExercises?.length > 0 
+        ? (existingExercises[0].display_order || 0) + 1 
+        : 1;
+
       const { data, error } = await supabase
         .from('exercises')
         .insert([{
@@ -27,6 +39,7 @@ export const exerciseService = {
           end_date: exerciseData.end_date,
           frequency_per_day: exerciseData.frequency_per_day,
           number_of_days: exerciseData.number_of_days,
+          display_order: nextOrder,
           created_by: user.id,
         }])
         .select()
@@ -41,7 +54,9 @@ export const exerciseService = {
   },
 
   /**
-   * Get exercises for a group
+   * Get exercises for a group in owner-defined order.
+   * Order is dynamic: owner sets order on Created Group Detail; same order is used
+   * for both the owner and all members (Joined Group Detail).
    * @param {string} groupId - Group ID
    * @returns {object} { data, error }
    */
@@ -51,6 +66,7 @@ export const exerciseService = {
         .from('exercises')
         .select('*')
         .eq('group_id', groupId)
+        .order('display_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -58,6 +74,51 @@ export const exerciseService = {
     } catch (error) {
       console.error('Get exercises error:', error.message);
       return { data: null, error };
+    }
+  },
+
+  /**
+   * Update exercise order
+   * @param {string} groupId - Group ID
+   * @param {Array} exerciseOrders - Array of { id, display_order } objects
+   * @returns {object} { error }
+   */
+  updateExerciseOrder: async (groupId, exerciseOrders) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Verify user is group owner
+      const { data: group } = await supabase
+        .from('groups')
+        .select('owner_id')
+        .eq('id', groupId)
+        .single();
+
+      if (!group || group.owner_id !== user.id) {
+        throw new Error('Only group owners can reorder exercises');
+      }
+
+      // Update each exercise's display_order
+      const updates = exerciseOrders.map(({ id, display_order }) =>
+        supabase
+          .from('exercises')
+          .update({ display_order })
+          .eq('id', id)
+          .eq('group_id', groupId)
+      );
+
+      const results = await Promise.all(updates);
+      const errors = results.filter(r => r.error);
+      
+      if (errors.length > 0) {
+        throw errors[0].error;
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('Update exercise order error:', error.message);
+      return { error };
     }
   },
 

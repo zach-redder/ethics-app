@@ -12,6 +12,7 @@ import { COLORS } from '../../../constants';
 import { exerciseService } from '../../../services';
 import { BottomTabBar } from '../../../components';
 import { ExerciseMenuModal } from './ExerciseMenuModal';
+import { formatters } from '../../../utils';
 
 /**
  * Exercise Detail Screen
@@ -160,7 +161,7 @@ export const ExerciseDetailScreen = ({ navigation, route }) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Frequency</Text>
             <Text style={styles.frequencyText}>
-              {exercise.frequency_per_day}x per day
+              {formatters.formatFrequencyRange(exercise.frequency_per_day)}x per day
             </Text>
           </View>
         )}
