@@ -44,12 +44,7 @@ export const ProfileScreen = ({ navigation }) => {
   };
 
   const handleNotifications = () => {
-    // Open device notification settings
-    if (Platform.OS === 'ios') {
-      Linking.openURL('app-settings:');
-    } else {
-      Linking.openSettings();
-    }
+    navigation.navigate('NotificationSettings');
   };
 
   const handleReportIssue = () => {

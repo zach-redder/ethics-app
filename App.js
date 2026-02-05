@@ -19,6 +19,7 @@ import {
   JoinedExerciseDetailScreen,
   ReportIssueScreen,
   ReportIssueSuccessModal,
+  NotificationSettingsScreen,
 } from './src/screens';
 import { authService, userService, notificationService } from './src/services';
 import { clearSession } from './src/services/supabase';
@@ -219,6 +220,7 @@ export default function App() {
         'Dashboard': 'GroupChoice',
         'Profile': 'Dashboard',
         'ReportIssue': 'Profile',
+        'NotificationSettings': 'Profile',
         'CreatedGroupDetail': 'Dashboard',
         'ManageMembers': 'CreatedGroupDetail',
         'ExerciseDetail': 'CreatedGroupDetail',
@@ -275,6 +277,8 @@ export default function App() {
         return <JoinedExerciseDetailScreen navigation={navigation} route={route} />;
       case 'ReportIssue':
         return <ReportIssueScreen navigation={navigation} route={route} />;
+      case 'NotificationSettings':
+        return <NotificationSettingsScreen navigation={navigation} route={route} />;
       default:
         return <WelcomeScreen navigation={navigation} />;
     }

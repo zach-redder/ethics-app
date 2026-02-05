@@ -83,6 +83,77 @@ export const notificationService = {
   },
 
   /**
+   * Get per-user notification settings (frequency & times).
+   * Falls back to sensible defaults if none exist.
+   * @returns {object} { data, error }
+   */
+  getUserNotificationSettings: async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116: row not found
+        throw error;
+      }
+
+      if (!data) {
+        // Default: 1 reminder at 13:00
+        return {
+          data: {
+            frequency_per_day: 1,
+            time_1: '13:00',
+            time_2: null,
+            time_3: null,
+          },
+          error: null,
+        };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Get notification settings error:', error.message);
+      return { data: null, error };
+    }
+  },
+
+  /**
+   * Update per-user notification settings.
+   * @param {object} settings - { frequency_per_day, time_1, time_2, time_3 }
+   * @returns {object} { error }
+   */
+  updateUserNotificationSettings: async (settings) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const payload = {
+        user_id: user.id,
+        frequency_per_day: Math.min(Math.max(settings.frequency_per_day || 1, 1), 3),
+        time_1: settings.time_1,
+        time_2: settings.frequency_per_day >= 2 ? settings.time_2 : null,
+        time_3: settings.frequency_per_day >= 3 ? settings.time_3 : null,
+      };
+
+      const { error } = await supabase
+        .from('notification_preferences')
+        .upsert(payload, { onConflict: 'user_id' });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      console.error('Update notification settings error:', error.message);
+      return { error };
+    }
+  },
+
+  /**
    * Get all active exercises for the current user
    * @returns {object} { data, error }
    */
@@ -162,6 +233,7 @@ export const notificationService = {
 
   /**
    * Schedule daily notifications for active exercises
+   * Uses per-user preferences for frequency (max 3) and times.
    * @returns {object} { scheduled, error }
    */
   scheduleDailyNotifications: async () => {
@@ -175,7 +247,7 @@ export const notificationService = {
       // Cancel all existing notifications
       await Notifications.cancelAllScheduledNotificationsAsync();
 
-      // Get active exercises
+      // Get active exercises (for today, including their effective date ranges)
       const { data: exercises, error } = await notificationService.getActiveExercises();
       
       if (error) {
@@ -186,58 +258,118 @@ export const notificationService = {
         return { scheduled: true, error: null };
       }
 
-      // Schedule notifications for each active exercise
+      // Get user notification preferences
+      const { data: prefs, error: prefsError } = await notificationService.getUserNotificationSettings();
+
+      if (prefsError) {
+        return { scheduled: false, error: prefsError };
+      }
+
+      // Build time slots (up to 3 per day)
+      const times = [];
+      const pushTimeIfValid = (t) => {
+        if (!t) return;
+        const [h, m] = t.split(':').map(Number);
+        if (Number.isNaN(h) || Number.isNaN(m)) return;
+        times.push({ hour: h, minute: m });
+      };
+
+      pushTimeIfValid(prefs.time_1 || '13:00');
+      pushTimeIfValid(prefs.time_2);
+      pushTimeIfValid(prefs.time_3);
+
+      const frequency = Math.min(Math.max(prefs.frequency_per_day || 1, 1), 3);
+      const timeSlots = times.slice(0, frequency > 0 ? frequency : 1);
+      if (timeSlots.length === 0) {
+        timeSlots.push({ hour: 13, minute: 0 });
+      }
+
+      // Schedule notifications per time slot per day (not per exercise),
+      // so the user receives at most `frequency` notifications per day total.
       const scheduledIds = [];
       const now = new Date();
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+
+      // Determine the overall date range across all active exercises
+      let globalStart = null;
+      let globalEnd = null;
 
       for (const exercise of exercises) {
         const startDate = new Date(exercise.effectiveStartDate);
         const endDate = new Date(exercise.effectiveEndDate);
-        const todayDate = new Date();
-        todayDate.setHours(0, 0, 0, 0);
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(0, 0, 0, 0);
 
-        // Only schedule if exercise is active (today is within date range)
-        if (todayDate >= startDate && todayDate <= endDate) {
-          // Schedule for each day from today (or start date if in future) until end date
-          let currentDate = new Date(Math.max(todayDate, startDate));
-          const finalEndDate = new Date(endDate);
+        if (!globalStart || startDate < globalStart) {
+          globalStart = startDate;
+        }
+        if (!globalEnd || endDate > globalEnd) {
+          globalEnd = endDate;
+        }
+      }
 
-          while (currentDate <= finalEndDate) {
-            // Set time to 1 PM (13:00)
-            const notificationDate = new Date(currentDate);
-            notificationDate.setHours(13, 0, 0, 0);
+      if (!globalStart || !globalEnd) {
+        return { scheduled: true, count: 0, error: null };
+      }
 
-            // Only schedule if the notification time hasn't passed
-            if (notificationDate >= now) {
-              try {
-                const notificationId = await Notifications.scheduleNotificationAsync({
-                  content: {
-                    title: 'Exercise Reminder',
-                    body: getNotificationMessage(exercise.title),
-                    sound: true,
-                    data: {
-                      exerciseId: exercise.id,
-                      exerciseName: exercise.title,
-                    },
-                  },
-                  trigger: {
-                    type: 'date',
-                    date: notificationDate,
-                  },
-                });
+      // Start from today or the first active date, whichever is later
+      let currentDate = new Date(Math.max(todayDate.getTime(), globalStart.getTime()));
 
-                scheduledIds.push(notificationId);
-              } catch (scheduleError) {
-                console.error(`Error scheduling notification for ${exercise.title}:`, scheduleError);
-              }
+      while (currentDate <= globalEnd) {
+        // For each time slot, schedule at most ONE notification,
+        // picking a random active exercise for that specific day.
+        for (const slot of timeSlots) {
+          const notificationDate = new Date(currentDate);
+          notificationDate.setHours(slot.hour, slot.minute, 0, 0);
+
+          // Only schedule if the notification time hasn't passed
+          if (notificationDate >= now) {
+            // Find exercises active on this specific date
+            const activeForDay = exercises.filter((exercise) => {
+              const startDate = new Date(exercise.effectiveStartDate);
+              const endDate = new Date(exercise.effectiveEndDate);
+              startDate.setHours(0, 0, 0, 0);
+              endDate.setHours(0, 0, 0, 0);
+              const day = new Date(currentDate);
+              day.setHours(0, 0, 0, 0);
+              return day >= startDate && day <= endDate;
+            });
+
+            if (activeForDay.length === 0) {
+              continue;
             }
 
-            // Move to next day
-            currentDate.setDate(currentDate.getDate() + 1);
+            // Pick a random exercise for this day/time
+            const randomIndex = Math.floor(Math.random() * activeForDay.length);
+            const exercise = activeForDay[randomIndex];
+
+            try {
+              const notificationId = await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: 'Exercise Reminder',
+                  body: getNotificationMessage(exercise.title),
+                  sound: true,
+                  data: {
+                    exerciseId: exercise.id,
+                    exerciseName: exercise.title,
+                  },
+                },
+                trigger: {
+                  type: 'date',
+                  date: notificationDate,
+                },
+              });
+
+              scheduledIds.push(notificationId);
+            } catch (scheduleError) {
+              console.error(`Error scheduling notification for ${exercise.title}:`, scheduleError);
+            }
           }
         }
+
+        // Move to next day
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
       console.log(`✅ Scheduled ${scheduledIds.length} notifications`);
