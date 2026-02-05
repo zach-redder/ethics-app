@@ -4,6 +4,7 @@
 
 export { ProfileScreen } from './ProfileScreen';
 export { EditProfileModal } from './EditProfileModal';
+export { DeleteAccountModal } from './DeleteAccountModal';
 export { ReportIssueScreen } from './ReportIssueScreen';
 export { ReportIssueSuccessModal } from './ReportIssueSuccessModal';
 export { NotificationSettingsScreen } from './NotificationSettingsScreen';

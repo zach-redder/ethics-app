@@ -185,6 +185,10 @@ CREATE POLICY "Users can update own profile" ON users
 CREATE POLICY "Users can insert own profile" ON users
   FOR INSERT WITH CHECK (auth.uid() = id);
 
+-- Users can delete their own account
+CREATE POLICY "Users can delete own account" ON users
+  FOR DELETE USING (auth.uid() = id);
+
 -- GROUPS POLICIES
 -- Users can view groups they are members of
 CREATE POLICY "Users can view groups they belong to" ON groups

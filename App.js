@@ -67,6 +67,7 @@ export default function App() {
             console.log('✅ [App] User authenticated:', session.user.id);
             setUser(session.user);
             // Check if user has completed profile setup
+            // This will also verify the user still exists (if deleted, will redirect to Welcome)
             await checkUserProfile(session.user.id);
           } else {
             console.log('👤 [App] No user session, showing welcome screen');
@@ -184,12 +185,14 @@ export default function App() {
           console.error('⚠️ Network error when checking user profile');
           // Still go to name input screen to allow user to continue
         }
-        // User profile not created, go to name input
+        // User profile not created (or error fetching), go to name input
+        // This handles both new signups and any errors
         setCurrentScreen('NameInput');
       } else if (data) {
         // User profile exists, go to dashboard
         setCurrentScreen('Dashboard');
       } else {
+        // No data returned - user hasn't created profile yet (new signup)
         setCurrentScreen('NameInput');
       }
     } catch (error) {
@@ -198,6 +201,7 @@ export default function App() {
       if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
         console.error('⚠️ Network error - Check Supabase configuration');
       }
+      // On any error, assume user needs to create profile
       setCurrentScreen('NameInput');
     }
   };

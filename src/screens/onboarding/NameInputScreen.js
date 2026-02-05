@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+    marginBottom: 75,
   },
   buttonDisabled: {
     opacity: 0.6,

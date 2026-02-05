@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants';
 import { userService, authService } from '../../services';
 import { EditProfileModal } from './EditProfileModal';
+import { DeleteAccountModal } from './DeleteAccountModal';
 import { BottomTabBar } from '../../components';
 
 /**
@@ -21,6 +22,7 @@ import { BottomTabBar } from '../../components';
 export const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const loadUser = useCallback(async () => {
     try {
@@ -81,6 +83,10 @@ export const ProfileScreen = ({ navigation }) => {
     loadUser();
   };
 
+  const handleDeleteAccount = () => {
+    setShowDeleteModal(true);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Profile</Text>
@@ -117,8 +123,8 @@ export const ProfileScreen = ({ navigation }) => {
           onPress={handleReportIssue}
           activeOpacity={0.7}
         >
-          <Ionicons name="alert-circle-outline" size={20} color={COLORS.secondary} />
-          <Text style={[styles.menuItemText, styles.reportIssueText]}>Report Issue</Text>
+          <Ionicons name="alert-circle-outline" size={20} color={COLORS.black} />
+          <Text style={styles.menuItemText}>Report Issue</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -131,6 +137,17 @@ export const ProfileScreen = ({ navigation }) => {
           <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
           <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
         </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleDeleteAccount}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+          <Text style={[styles.menuItemText, styles.deleteAccountText]}>Delete Account</Text>
+        </TouchableOpacity>
       </View>
 
       <BottomTabBar navigation={navigation} activeScreen="Profile" />
@@ -140,6 +157,11 @@ export const ProfileScreen = ({ navigation }) => {
         user={user}
         onClose={() => setShowEditModal(false)}
         onProfileUpdated={handleProfileUpdated}
+      />
+
+      <DeleteAccountModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
       />
     </View>
   );
@@ -190,8 +212,8 @@ const styles = StyleSheet.create({
   logoutText: {
     color: COLORS.error,
   },
-  reportIssueText: {
-    color: COLORS.secondary,
+  deleteAccountText: {
+    color: COLORS.error,
   },
   divider: {
     height: 1,
