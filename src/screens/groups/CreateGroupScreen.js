@@ -46,6 +46,12 @@ export const CreateGroupScreen = ({ navigation, route }) => {
       return;
     }
 
+    // If both dates are provided, enforce a valid range
+    if (startDate && endDate && endDate < startDate) {
+      Alert.alert('Error', 'End date cannot be before start date');
+      return;
+    }
+
     setLoading(true);
     try {
       const groupData = {
@@ -147,9 +153,22 @@ export const CreateGroupScreen = ({ navigation, route }) => {
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(event, selectedDate) => {
-                setShowStartPicker(Platform.OS === 'ios');
-                if (selectedDate) {
+                const type = event.type || event?.nativeEvent?.type;
+
+                // On Android, close after any interaction
+                if (Platform.OS === 'android') {
+                  setShowStartPicker(false);
+                }
+
+                if (type === 'set' && selectedDate) {
                   setStartDate(selectedDate);
+
+                  // If end date exists but is before the new start, auto-adjust
+                  if (endDate && endDate < selectedDate) {
+                    setEndDate(selectedDate);
+                  }
+                } else if (type === 'dismissed') {
+                  setShowStartPicker(false);
                 }
               }}
             />
@@ -175,9 +194,20 @@ export const CreateGroupScreen = ({ navigation, route }) => {
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(event, selectedDate) => {
-                setShowEndPicker(Platform.OS === 'ios');
-                if (selectedDate) {
-                  setEndDate(selectedDate);
+                const type = event.type || event?.nativeEvent?.type;
+
+                if (Platform.OS === 'android') {
+                  setShowEndPicker(false);
+                }
+
+                if (type === 'set' && selectedDate) {
+                  if (startDate && selectedDate < startDate) {
+                    setEndDate(startDate);
+                  } else {
+                    setEndDate(selectedDate);
+                  }
+                } else if (type === 'dismissed') {
+                  setShowEndPicker(false);
                 }
               }}
             />

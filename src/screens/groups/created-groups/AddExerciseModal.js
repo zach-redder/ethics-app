@@ -56,6 +56,12 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
       return;
     }
 
+    // Ensure date range is valid
+    if (endDate < startDate) {
+      Alert.alert('Error', 'End date cannot be before start date');
+      return;
+    }
+
     // Validate frequency range if provided
     let frequencyValue = null;
     if (frequencyMin.trim() || frequencyMax.trim()) {
@@ -262,23 +268,27 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
         {showStartPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={startDate ? new Date(startDate) : new Date()}
+              value={startDate || new Date()}
               mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               minimumDate={new Date()}
               onChange={(event, selectedDate) => {
+                const type = event.type || event?.nativeEvent?.type;
+
+                // Android shows a separate dialog – hide picker after any action
                 if (Platform.OS === 'android') {
                   setShowStartPicker(false);
-                  if (event.type === 'set' && selectedDate) {
-                    setStartDate(selectedDate);
+                }
+
+                if (type === 'set' && selectedDate) {
+                  setStartDate(selectedDate);
+
+                  // If end date is before new start, or not set, gently auto-adjust
+                  if (!endDate || endDate < selectedDate) {
+                    setEndDate(selectedDate);
                   }
-                } else {
-                  // iOS
-                  if (event.type === 'set' && selectedDate) {
-                    setStartDate(selectedDate);
-                  } else if (event.type === 'dismissed') {
-                    setShowStartPicker(false);
-                  }
+                } else if (type === 'dismissed') {
+                  setShowStartPicker(false);
                 }
               }}
             />
@@ -296,23 +306,26 @@ export const AddExerciseModal = ({ visible, groupId, onClose, onExerciseAdded })
         {showEndPicker && (
           <View style={styles.pickerContainer}>
             <DateTimePicker
-              value={endDate ? new Date(endDate) : (startDate ? new Date(startDate) : new Date())}
+              value={endDate || startDate || new Date()}
               mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               minimumDate={startDate ? new Date(startDate) : new Date()}
               onChange={(event, selectedDate) => {
+                const type = event.type || event?.nativeEvent?.type;
+
                 if (Platform.OS === 'android') {
                   setShowEndPicker(false);
-                  if (event.type === 'set' && selectedDate) {
+                }
+
+                if (type === 'set' && selectedDate) {
+                  // Never allow an end date before the start date
+                  if (startDate && selectedDate < startDate) {
+                    setEndDate(startDate);
+                  } else {
                     setEndDate(selectedDate);
                   }
-                } else {
-                  // iOS
-                  if (event.type === 'set' && selectedDate) {
-                    setEndDate(selectedDate);
-                  } else if (event.type === 'dismissed') {
-                    setShowEndPicker(false);
-                  }
+                } else if (type === 'dismissed') {
+                  setShowEndPicker(false);
                 }
               }}
             />

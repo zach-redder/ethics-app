@@ -9,6 +9,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
@@ -22,12 +24,27 @@ import { formatters } from '../../../utils';
 export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated }) => {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
     if (day) {
       setNotes(day.notes || '');
     }
   }, [day]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -95,6 +112,8 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
   };
 
   const handleSaveNotes = async () => {
+    // Save notes without closing the modal or refreshing the parent screen
+    // so that blurring the input (e.g. tapping outside) only unfocuses it.
     setLoading(true);
     try {
       await exerciseProgressService.upsertProgress(exercise.id, day.dateStr, {
@@ -102,7 +121,6 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
         number_of_completions: day.completions || 0,
         is_completed: day.isCompleted || false,
       });
-      onDayUpdated();
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to save notes');
     } finally {
@@ -124,60 +142,74 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeIcon}>×</Text>
-          </TouchableOpacity>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Day {day.dayNumber}</Text>
-            <Text style={styles.date}>{formatDate(day.date)}</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.inner}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Text style={styles.closeIcon}>×</Text>
+              </TouchableOpacity>
+              <View style={styles.titleContainer}>
+                <Text style={styles.title}>Day {day.dayNumber}</Text>
+                <Text style={styles.date}>{formatDate(day.date)}</Text>
+              </View>
+              <View style={styles.placeholder} />
+            </View>
+
+            <View style={styles.content}>
+              <Text style={styles.label}>Notes</Text>
+              <TextInput
+                style={styles.notesInput}
+                placeholder="Enter notes..."
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={8}
+                placeholderTextColor={COLORS.inputPlaceholder}
+                textAlignVertical="top"
+                onBlur={handleSaveNotes}
+              />
+            </View>
+
+            <View
+              style={[
+                styles.buttonRow,
+                isKeyboardVisible && styles.buttonRowKeyboard,
+              ]}
+            >
+              <TouchableOpacity
+                style={[styles.actionButton, styles.undoButton]}
+                onPress={handleUndo}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="arrow-undo" size={20} color={COLORS.white} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.addButton]}
+                onPress={handleAddOne}
+                disabled={
+                  loading ||
+                  (formatters.getMaxFrequency(exercise.frequency_per_day) > 0 &&
+                    day.completions >=
+                      formatters.getMaxFrequency(exercise.frequency_per_day))
+                }
+                activeOpacity={0.85}
+              >
+                <Text style={styles.addButtonText}>+1</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.checkButton]}
+                onPress={handleCheck}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="checkmark" size={20} color={COLORS.white} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.placeholder} />
-        </View>
-
-        <View style={styles.content}>
-          <Text style={styles.label}>Notes</Text>
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Enter notes..."
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={8}
-            placeholderTextColor={COLORS.inputPlaceholder}
-            textAlignVertical="top"
-            onBlur={handleSaveNotes}
-          />
-        </View>
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.undoButton]}
-            onPress={handleUndo}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="arrow-undo" size={20} color={COLORS.white} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.addButton]}
-            onPress={handleAddOne}
-            disabled={loading || (formatters.getMaxFrequency(exercise.frequency_per_day) > 0 && day.completions >= formatters.getMaxFrequency(exercise.frequency_per_day))}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.addButtonText}>+1</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.checkButton]}
-            onPress={handleCheck}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="checkmark" size={20} color={COLORS.white} />
-          </TouchableOpacity>
-        </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -189,6 +221,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     padding: 24,
     paddingTop: 60,
+  },
+  inner: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -248,6 +283,9 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 24,
     marginBottom: 40,
+  },
+  buttonRowKeyboard: {
+    marginBottom: -25,
   },
   actionButton: {
     width: 60,

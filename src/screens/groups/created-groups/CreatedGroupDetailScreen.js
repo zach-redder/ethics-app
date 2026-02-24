@@ -287,7 +287,13 @@ export const CreatedGroupDetailScreen = ({ navigation, route }) => {
             }
             activeOpacity={0.7}
           >
-            <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+            <Text
+              style={styles.exerciseTitle}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {exercise.title}
+            </Text>
             <Text style={styles.exerciseDescription} numberOfLines={2}>
               {exercise.description || 'No description'}
             </Text>

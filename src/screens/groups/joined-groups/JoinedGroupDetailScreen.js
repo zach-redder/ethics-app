@@ -122,27 +122,32 @@ export const JoinedGroupDetailScreen = ({ navigation, route }) => {
           </View>
         ) : (
           exercises.map((exercise) => {
-            const unlocked = isExerciseUnlocked(exercise);
+            const isCurrentTimeframe = isExerciseUnlocked(exercise);
             return (
               <TouchableOpacity
                 key={exercise.id}
                 style={[
                   styles.exerciseCard,
-                  unlocked ? styles.exerciseCardUnlocked : styles.exerciseCardLocked,
+                  isCurrentTimeframe
+                    ? styles.exerciseCardUnlocked
+                    : styles.exerciseCardLocked,
                 ]}
                 onPress={() => {
-                  if (unlocked) {
-                    navigation.navigate('JoinedExerciseDetail', { 
-                      exerciseId: exercise.id,
-                      groupId: groupId 
-                    });
-                  }
+                  navigation.navigate('JoinedExerciseDetail', { 
+                    exerciseId: exercise.id,
+                    groupId: groupId 
+                  });
                 }}
-                activeOpacity={unlocked ? 0.7 : 1}
-                disabled={!unlocked}
+                activeOpacity={0.7}
               >
                 <View style={styles.exerciseContent}>
-                  <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+                  <Text
+                    style={styles.exerciseTitle}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    {exercise.title}
+                  </Text>
                   <Text style={styles.exerciseDescription} numberOfLines={2}>
                     {exercise.description || 'No description'}
                   </Text>
@@ -155,7 +160,7 @@ export const JoinedGroupDetailScreen = ({ navigation, route }) => {
                     Ends: {formatDate(exercise.end_date)}
                   </Text>
                   <View style={styles.iconContainer}>
-                    {unlocked ? (
+                    {isCurrentTimeframe ? (
                       <Ionicons name="lock-open" size={20} color={COLORS.black} />
                     ) : (
                       <Ionicons name="lock-closed" size={20} color={COLORS.black} />
@@ -236,7 +241,6 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
   },
   exerciseCard: {
-    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -249,6 +253,9 @@ const styles = StyleSheet.create({
   },
   exerciseCardUnlocked: {
     backgroundColor: '#A8D5A8',
+  },
+  exerciseCardInactive: {
+    backgroundColor: '#F3F3F3',
   },
   exerciseCardLocked: {
     backgroundColor: '#D5A8A8',

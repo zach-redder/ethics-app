@@ -5,11 +5,14 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
+  Alert,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
 import { InstructionsModal } from './InstructionsModal';
 import { EditTimeframeModal } from './EditTimeframeModal';
+import { exerciseProgressService } from '../../../services';
 
 /**
  * Joined Exercise Menu Modal
@@ -23,6 +26,7 @@ export const JoinedExerciseMenuModal = ({
 }) => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showEditTimeframe, setShowEditTimeframe] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const handleViewInstructions = () => {
     onClose();
@@ -32,6 +36,81 @@ export const JoinedExerciseMenuModal = ({
   const handleEditTimeframe = () => {
     onClose();
     setShowEditTimeframe(true);
+  };
+
+  const handleShareNotes = async () => {
+    if (!exercise?.id) {
+      Alert.alert('Error', 'Exercise information is missing.');
+      return;
+    }
+
+    try {
+      setSharing(true);
+
+      const { data, error } = await exerciseProgressService.getProgressByExercise(
+        exercise.id
+      );
+
+      if (error) {
+        Alert.alert(
+          'Error',
+          error.message || 'Failed to load exercise notes for sharing.'
+        );
+        return;
+      }
+
+      const rowsWithNotes = (data || []).filter(
+        (row) => row.notes && row.notes.trim().length > 0
+      );
+
+      if (rowsWithNotes.length === 0) {
+        Alert.alert('No Notes', 'You have no notes for this exercise yet.');
+        return;
+      }
+
+      const lines = [];
+      lines.push(`Exercise: ${exercise.title}`);
+      if (exercise.description) {
+        lines.push(`Description: ${exercise.description}`);
+      }
+      lines.push('');
+      lines.push('Notes by day:');
+
+      rowsWithNotes.forEach((row) => {
+        const date = new Date(row.practice_date);
+        const formatted = date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+        lines.push(`- ${formatted}: ${row.notes}`);
+      });
+
+      const subject = `Notes for "${exercise.title}"`;
+      const body = lines.join('\n');
+      const mailtoUrl = `mailto:?subject=${encodeURIComponent(
+        subject
+      )}&body=${encodeURIComponent(body)}`;
+
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      if (!canOpen) {
+        Alert.alert(
+          'Error',
+          'No email application is available on this device.'
+        );
+        return;
+      }
+
+      onClose();
+      await Linking.openURL(mailtoUrl);
+    } catch (err) {
+      Alert.alert(
+        'Error',
+        err?.message || 'Failed to open email client for sharing notes.'
+      );
+    } finally {
+      setSharing(false);
+    }
   };
 
   return (
@@ -64,6 +143,18 @@ export const JoinedExerciseMenuModal = ({
             >
               <Ionicons name="pencil" size={20} color={COLORS.black} />
               <Text style={styles.menuItemText}>Edit Timeframe</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleShareNotes}
+              disabled={sharing}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="share-social-outline" size={20} color={COLORS.black} />
+              <Text style={styles.menuItemText}>
+                {sharing ? 'Preparing…' : 'Share Exercise Notes'}
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

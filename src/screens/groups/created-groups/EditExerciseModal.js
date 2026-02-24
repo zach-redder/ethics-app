@@ -90,6 +90,11 @@ export const EditExerciseModal = ({
       return;
     }
 
+    if (endDate < startDate) {
+      Alert.alert('Error', 'End date cannot be before start date');
+      return;
+    }
+
     // Validate frequency range if provided
     let frequencyValue = null;
     if (frequencyMin.trim() || frequencyMax.trim()) {
@@ -292,17 +297,22 @@ export const EditExerciseModal = ({
             <DateTimePicker
               value={startDate || new Date()}
               mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(event, selectedDate) => {
+                const type = event.type || event?.nativeEvent?.type;
+
                 if (Platform.OS === 'android') {
                   setShowStartPicker(false);
                 }
-                if (event.type === 'set' && selectedDate) {
+
+                if (type === 'set' && selectedDate) {
                   setStartDate(selectedDate);
-                  if (Platform.OS === 'ios') {
-                    setShowStartPicker(false);
+
+                  // If end date is before new start, or not set, auto-adjust
+                  if (!endDate || endDate < selectedDate) {
+                    setEndDate(selectedDate);
                   }
-                } else if (event.type === 'dismissed') {
+                } else if (type === 'dismissed') {
                   setShowStartPicker(false);
                 }
               }}
@@ -323,17 +333,21 @@ export const EditExerciseModal = ({
             <DateTimePicker
               value={endDate || new Date()}
               mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(event, selectedDate) => {
+                const type = event.type || event?.nativeEvent?.type;
+
                 if (Platform.OS === 'android') {
                   setShowEndPicker(false);
                 }
-                if (event.type === 'set' && selectedDate) {
-                  setEndDate(selectedDate);
-                  if (Platform.OS === 'ios') {
-                    setShowEndPicker(false);
+
+                if (type === 'set' && selectedDate) {
+                  if (startDate && selectedDate < startDate) {
+                    setEndDate(startDate);
+                  } else {
+                    setEndDate(selectedDate);
                   }
-                } else if (event.type === 'dismissed') {
+                } else if (type === 'dismissed') {
                   setShowEndPicker(false);
                 }
               }}
