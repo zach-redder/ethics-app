@@ -10,8 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { COLORS } from '../../constants';
-import { userService } from '../../services';
-import { supabase } from '../../services/supabase';
+import { userService, authService } from '../../services';
 
 /**
  * Name Input Screen - Collect user's name after signup
@@ -29,8 +28,8 @@ export const NameInputScreen = ({ navigation }) => {
     setLoading(true);
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { user, error: userError } = await authService.getCurrentUser();
+      if (userError || !user) {
         throw new Error('No user logged in');
       }
 
