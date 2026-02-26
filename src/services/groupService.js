@@ -244,16 +244,4 @@ export const groupService = {
       return { error };
     }
   },
-
-  getGroupAdminEmail: async (groupId) => {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_group_admin_email', { p_group_id: groupId });
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Get group admin email error:', error.message);
-      return { data: null, error };
-    }
-  },
 };
