@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants';
+import { COLORS, SHADOWS } from '../../../constants';
 import { groupService, exerciseService } from '../../../services';
+import { formatters } from '../../../utils';
 import { BottomTabBar } from '../../../components';
 
 /**
@@ -43,15 +44,6 @@ export const JoinedGroupDetailScreen = ({ navigation, route }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
   };
 
   const isExerciseUnlocked = (exercise) => {
@@ -154,10 +146,10 @@ export const JoinedGroupDetailScreen = ({ navigation, route }) => {
                 </View>
                 <View style={styles.exerciseInfo}>
                   <Text style={styles.dateText}>
-                    Starts: {formatDate(exercise.start_date)}
+                    Starts: {formatters.formatDateShort(exercise.start_date)}
                   </Text>
                   <Text style={styles.dateText}>
-                    Ends: {formatDate(exercise.end_date)}
+                    Ends: {formatters.formatDateShort(exercise.end_date)}
                   </Text>
                   <View style={styles.iconContainer}>
                     {isCurrentTimeframe ? (
@@ -230,11 +222,7 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
     marginTop: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...SHADOWS.light,
   },
   emptyText: {
     fontSize: 16,
@@ -245,20 +233,16 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...SHADOWS.light,
   },
   exerciseCardUnlocked: {
-    backgroundColor: '#A8D5A8',
+    backgroundColor: COLORS.success,
   },
   exerciseCardInactive: {
     backgroundColor: '#F3F3F3',
   },
   exerciseCardLocked: {
-    backgroundColor: '#D5A8A8',
+    backgroundColor: COLORS.errorLight,
   },
   exerciseContent: {
     flex: 1,

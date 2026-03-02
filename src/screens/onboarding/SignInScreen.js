@@ -11,7 +11,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { COLORS } from '../../constants';
+import { COLORS, SHADOWS } from '../../constants';
 import { authService } from '../../services';
 
 /**
@@ -266,11 +266,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.light,
   },
   input: {
     paddingVertical: 16,
@@ -337,11 +333,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '85%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    ...SHADOWS.medium,
   },
   modalTitle: {
     fontSize: 24,
@@ -359,11 +351,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 12,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.light,
   },
   modalInput: {
     paddingVertical: 16,

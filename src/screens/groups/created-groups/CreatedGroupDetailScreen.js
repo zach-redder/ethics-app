@@ -11,8 +11,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants';
+import { COLORS, SHADOWS } from '../../../constants';
 import { groupService, exerciseService, supabase } from '../../../services';
+import { formatters } from '../../../utils';
 import { BottomTabBar } from '../../../components';
 import { AddExerciseModal } from './AddExerciseModal';
 import { GroupSettingsModal } from './GroupSettingsModal';
@@ -133,15 +134,6 @@ export const CreatedGroupDetailScreen = ({ navigation, route }) => {
   const handleGroupDeleted = () => {
     setShowSettings(false);
     navigation.goBack();
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
   };
 
   const isExerciseActive = (exercise) => {
@@ -300,10 +292,10 @@ export const CreatedGroupDetailScreen = ({ navigation, route }) => {
           </TouchableOpacity>
           <View style={styles.exerciseDates}>
             <Text style={styles.dateText}>
-              Starts: {formatDate(exercise.start_date)}
+              Starts: {formatters.formatDateShort(exercise.start_date)}
             </Text>
             <Text style={styles.dateText}>
-              Ends: {formatDate(exercise.end_date)}
+              Ends: {formatters.formatDateShort(exercise.end_date)}
             </Text>
           </View>
         </Animated.View>
@@ -464,11 +456,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
     marginHorizontal: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...SHADOWS.light,
   },
   emptyText: {
     fontSize: 16,
@@ -483,11 +471,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...SHADOWS.light,
   },
   exerciseCardDragging: {
     zIndex: 1000,
@@ -498,10 +482,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exerciseCardActive: {
-    backgroundColor: '#A8D5A8',
+    backgroundColor: COLORS.success,
   },
   exerciseCardInactive: {
-    backgroundColor: '#D5A8A8',
+    backgroundColor: COLORS.errorLight,
   },
   exerciseContent: {
     flex: 1,

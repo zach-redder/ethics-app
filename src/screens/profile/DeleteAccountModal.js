@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants';
+import { COLORS, SHADOWS } from '../../constants';
 import { userService } from '../../services';
 
 const CONFIRMATION_TEXT = 'DELETE';
@@ -166,11 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    ...SHADOWS.medium,
   },
   header: {
     alignItems: 'center',

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { COLORS } from '../../constants';
+import { COLORS, SHADOWS } from '../../constants';
 import { groupMemberService, groupService } from '../../services';
 
 /**
@@ -184,11 +184,7 @@ const styles = StyleSheet.create({
   codeInputContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.light,
   },
   codeInput: {
     width: 50,

@@ -13,7 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants';
 import { notificationService } from '../../services';
-import { BottomTabBar } from '../../components';
+import { BottomTabBar, ScreenHeader, Card } from '../../components';
 
 /**
  * Notification Settings Screen
@@ -167,16 +167,11 @@ export const NotificationSettingsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.secondary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Notification Settings</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <ScreenHeader
+        title="Notification Settings"
+        onBack={() => navigation.goBack()}
+        iconColor={COLORS.secondary}
+      />
 
       <ScrollView
         style={styles.content}
@@ -184,7 +179,7 @@ export const NotificationSettingsScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
 
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.sectionTitle}>Manage notifications</Text>          
           <TouchableOpacity
             style={styles.manageSystemButton}
@@ -196,9 +191,9 @@ export const NotificationSettingsScreen = ({ navigation }) => {
               Open settings
             </Text>
           </TouchableOpacity>
-        </View>
+        </Card>
 
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.sectionTitle}>Reminders per day</Text>
           <Text style={styles.sectionSubtitle}>
             Choose how many times per day you&apos;d like to be reminded.
@@ -206,9 +201,9 @@ export const NotificationSettingsScreen = ({ navigation }) => {
           <View style={styles.freqRow}>
             {[1, 2, 3].map(renderFrequencyOption)}
           </View>
-        </View>
+        </Card>
 
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.sectionTitle}>Reminder times</Text>
           <Text style={styles.sectionSubtitle}>
             Set the times you&apos;d like to receive reminders.
@@ -237,10 +232,10 @@ export const NotificationSettingsScreen = ({ navigation }) => {
               </View>
             );
           })}
-        </View>
+        </Card>
 
         {pickerState.visible && (
-          <View style={styles.pickerContainer}>
+          <Card>
             <DateTimePicker
               value={pickerState.date}
               mode="time"
@@ -256,7 +251,7 @@ export const NotificationSettingsScreen = ({ navigation }) => {
                 <Text style={styles.pickerDoneText}>Done</Text>
               </TouchableOpacity>
             )}
-          </View>
+          </Card>
         )}
 
         <TouchableOpacity
@@ -282,44 +277,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingTop: 70,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  backButton: {
-    width: 40,
-    padding: 4,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     paddingHorizontal: 24,
   },
   contentContainer: {
     paddingTop: 0,
     paddingBottom: 20,
-  },
-  pickerContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
   },
   pickerDoneButton: {
     backgroundColor: COLORS.primary,
@@ -332,17 +295,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
   },
   sectionTitle: {
     fontSize: 16,

@@ -10,10 +10,10 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants';
+import { COLORS, SHADOWS } from '../../constants';
 import { groupService } from '../../services';
+import { formatters } from '../../utils';
+import { DatePickerInput } from '../../components';
 
 /**
  * Create Group Screen
@@ -26,19 +26,6 @@ export const CreateGroupScreen = ({ navigation, route }) => {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const formatDate = (date) => {
-    if (!date) return '';
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
-  };
-
-  const formatDateForDB = (date) => {
-    if (!date) return null;
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-  };
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
@@ -57,8 +44,8 @@ export const CreateGroupScreen = ({ navigation, route }) => {
       const groupData = {
         name: groupName.trim(),
         description: description.trim() || null,
-        start_date: formatDateForDB(startDate),
-        end_date: formatDateForDB(endDate),
+        start_date: formatters.formatDateForDB(startDate),
+        end_date: formatters.formatDateForDB(endDate),
       };
 
       const { data, error } = await groupService.createGroup(groupData);
@@ -134,84 +121,33 @@ export const CreateGroupScreen = ({ navigation, route }) => {
           </View>
 
           <Text style={styles.label}>Start Date (optional)</Text>
-          <TouchableOpacity
-            style={styles.dateInputContainer}
-            onPress={() => {
-              setShowEndPicker(false);
-              setShowStartPicker(true);
+          <DatePickerInput
+            value={startDate}
+            onChange={(date) => {
+              setStartDate(date);
+              if (endDate && endDate < date) setEndDate(date);
             }}
-          >
-            <Text style={[styles.dateText, !startDate && styles.placeholderText]}>
-              {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
-            </Text>
-            <Ionicons name="calendar-outline" size={22} color={COLORS.gray} />
-          </TouchableOpacity>
-
-          {showStartPicker && (
-            <DateTimePicker
-              value={startDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, selectedDate) => {
-                const type = event.type || event?.nativeEvent?.type;
-
-                // On Android, close after any interaction
-                if (Platform.OS === 'android') {
-                  setShowStartPicker(false);
-                }
-
-                if (type === 'set' && selectedDate) {
-                  setStartDate(selectedDate);
-
-                  // If end date exists but is before the new start, auto-adjust
-                  if (endDate && endDate < selectedDate) {
-                    setEndDate(selectedDate);
-                  }
-                } else if (type === 'dismissed') {
-                  setShowStartPicker(false);
-                }
-              }}
-            />
-          )}
+            open={showStartPicker}
+            onOpen={() => { setShowEndPicker(false); setShowStartPicker(true); }}
+            onClose={() => setShowStartPicker(false)}
+            style={styles.dateInputContainer}
+          />
 
           <Text style={styles.label}>End Date (optional)</Text>
-          <TouchableOpacity
-            style={styles.dateInputContainer}
-            onPress={() => {
-              setShowStartPicker(false);
-              setShowEndPicker(true);
+          <DatePickerInput
+            value={endDate}
+            onChange={(date) => {
+              if (startDate && date < startDate) {
+                setEndDate(startDate);
+              } else {
+                setEndDate(date);
+              }
             }}
-          >
-            <Text style={[styles.dateText, !endDate && styles.placeholderText]}>
-              {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
-            </Text>
-            <Ionicons name="calendar-outline" size={22} color={COLORS.gray} />
-          </TouchableOpacity>
-
-          {showEndPicker && (
-            <DateTimePicker
-              value={endDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, selectedDate) => {
-                const type = event.type || event?.nativeEvent?.type;
-
-                if (Platform.OS === 'android') {
-                  setShowEndPicker(false);
-                }
-
-                if (type === 'set' && selectedDate) {
-                  if (startDate && selectedDate < startDate) {
-                    setEndDate(startDate);
-                  } else {
-                    setEndDate(selectedDate);
-                  }
-                } else if (type === 'dismissed') {
-                  setShowEndPicker(false);
-                }
-              }}
-            />
-          )}
+            open={showEndPicker}
+            onOpen={() => { setShowStartPicker(false); setShowEndPicker(true); }}
+            onClose={() => setShowEndPicker(false)}
+            style={styles.dateInputContainer}
+          />
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -273,11 +209,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.light,
   },
   input: {
     paddingVertical: 16,
@@ -293,25 +225,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   dateInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: COLORS.white,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  dateText: {
-    fontSize: 16,
-    color: COLORS.black,
-  },
-  placeholderText: {
-    color: COLORS.inputPlaceholder,
+    borderWidth: 0,
+    ...SHADOWS.light,
   },
   button: {
     backgroundColor: COLORS.primary,

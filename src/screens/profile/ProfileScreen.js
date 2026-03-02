@@ -9,7 +9,7 @@ import {
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants';
+import { COLORS, SHADOWS } from '../../constants';
 import { userService, authService } from '../../services';
 import { EditProfileModal } from './EditProfileModal';
 import { DeleteAccountModal } from './DeleteAccountModal';
@@ -193,11 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     marginHorizontal: 20,
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...SHADOWS.light,
   },
   menuItem: {
     flexDirection: 'row',

@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
-import { COLORS } from '../../constants';
+import { COLORS, SHADOWS } from '../../constants';
 
 /**
  * Report Issue Success Modal
@@ -51,11 +51,7 @@ const styles = StyleSheet.create({
     padding: 24,
     minWidth: 250,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    ...SHADOWS.medium,
   },
   message: {
     fontSize: 18,

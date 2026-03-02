@@ -5,7 +5,68 @@
 
 export const formatters = {
   /**
-   * Format date to readable string
+   * Format a Date object for date picker display — "MM/DD/YYYY"
+   * @param {Date} date
+   * @returns {string}
+   */
+  formatDatePicker: (date) => {
+    if (!date) return '';
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  },
+
+  /**
+   * Format a Date object for database storage — "YYYY-MM-DD" in local timezone.
+   * Uses local timezone to avoid UTC midnight offset bugs.
+   * @param {Date} date
+   * @returns {string|null}
+   */
+  formatDateForDB: (date) => {
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  /**
+   * Format date to short string — "Jan 5"
+   * @param {string|Date} date
+   * @returns {string}
+   */
+  formatDateShort: (date) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  },
+
+  /**
+   * Format date to long string — "January 5"
+   * Accepts either a Date object or a date string.
+   * @param {string|Date} date
+   * @returns {string}
+   */
+  formatDateLong: (date) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  },
+
+  /**
+   * Format date to long string with year — "January 5, 2024"
+   * @param {string|Date} date
+   * @returns {string}
+   */
+  formatDateLongWithYear: (date) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  },
+
+  /**
+   * Format date to readable string (long with year — legacy alias)
    * @param {string|Date} date
    * @returns {string}
    */

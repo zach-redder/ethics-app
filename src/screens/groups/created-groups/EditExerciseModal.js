@@ -11,10 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '../../../constants';
 import { exerciseService, notificationService } from '../../../services';
 import { formatters } from '../../../utils';
+import { ScreenHeader, DatePickerCard } from '../../../components';
 
 /**
  * Edit Exercise Modal
@@ -37,19 +37,6 @@ export const EditExerciseModal = ({
   const [instructions, setInstructions] = useState('');
   const [numberOfDays, setNumberOfDays] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const formatDate = (date) => {
-    if (!date) return '';
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
-  };
-
-  const formatDateForDB = (date) => {
-    if (!date) return null;
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-  };
 
   useEffect(() => {
     if (exercise) {
@@ -126,8 +113,8 @@ export const EditExerciseModal = ({
       }
     }
 
-    const startDateDB = formatDateForDB(startDate);
-    const endDateDB = formatDateForDB(endDate);
+    const startDateDB = formatters.formatDateForDB(startDate);
+    const endDateDB = formatters.formatDateForDB(endDate);
 
     setLoading(true);
     try {
@@ -174,13 +161,7 @@ export const EditExerciseModal = ({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeIcon}>×</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Edit Exercise</Text>
-          <View style={styles.placeholder} />
-        </View>
+        <ScreenHeader title="Edit Exercise" onBack={onClose} variant="modal" />
 
         <ScrollView
           style={styles.content}
@@ -216,7 +197,7 @@ export const EditExerciseModal = ({
                 }}
               >
                 <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
-                  {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
+                  {startDate ? formatters.formatDatePicker(startDate) : 'MM/DD/YYYY'}
                 </Text>
               </TouchableOpacity>
               <Text style={styles.dateSeparator}>to</Text>
@@ -228,7 +209,7 @@ export const EditExerciseModal = ({
                 }}
               >
                 <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
-                  {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
+                  {endDate ? formatters.formatDatePicker(endDate) : 'MM/DD/YYYY'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -293,74 +274,28 @@ export const EditExerciseModal = ({
         </TouchableOpacity>
 
         {showStartPicker && (
-          <View style={styles.pickerContainer}>
-            <DateTimePicker
-              value={startDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, selectedDate) => {
-                const type = event.type || event?.nativeEvent?.type;
-
-                if (Platform.OS === 'android') {
-                  setShowStartPicker(false);
-                }
-
-                if (type === 'set' && selectedDate) {
-                  setStartDate(selectedDate);
-
-                  // If end date is before new start, or not set, auto-adjust
-                  if (!endDate || endDate < selectedDate) {
-                    setEndDate(selectedDate);
-                  }
-                } else if (type === 'dismissed') {
-                  setShowStartPicker(false);
-                }
-              }}
-            />
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={styles.pickerDoneButton}
-                onPress={() => setShowStartPicker(false)}
-              >
-                <Text style={styles.pickerDoneText}>Done</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <DatePickerCard
+            value={startDate}
+            onChange={(date) => {
+              setStartDate(date);
+              if (!endDate || endDate < date) setEndDate(date);
+            }}
+            onClose={() => setShowStartPicker(false)}
+          />
         )}
 
         {showEndPicker && (
-          <View style={styles.pickerContainer}>
-            <DateTimePicker
-              value={endDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, selectedDate) => {
-                const type = event.type || event?.nativeEvent?.type;
-
-                if (Platform.OS === 'android') {
-                  setShowEndPicker(false);
-                }
-
-                if (type === 'set' && selectedDate) {
-                  if (startDate && selectedDate < startDate) {
-                    setEndDate(startDate);
-                  } else {
-                    setEndDate(selectedDate);
-                  }
-                } else if (type === 'dismissed') {
-                  setShowEndPicker(false);
-                }
-              }}
-            />
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={styles.pickerDoneButton}
-                onPress={() => setShowEndPicker(false)}
-              >
-                <Text style={styles.pickerDoneText}>Done</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <DatePickerCard
+            value={endDate}
+            onChange={(date) => {
+              if (startDate && date < startDate) {
+                setEndDate(startDate);
+              } else {
+                setEndDate(date);
+              }
+            }}
+            onClose={() => setShowEndPicker(false)}
+          />
         )}
       </KeyboardAvoidingView>
     </Modal>
@@ -373,32 +308,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     padding: 24,
     paddingTop: 60,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  closeButton: {
-    width: 40,
-    padding: 4,
-  },
-  closeIcon: {
-    fontSize: 36,
-    color: COLORS.secondary,
-    fontWeight: '300',
-    lineHeight: 36,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
   },
   content: {
     flex: 1,
@@ -417,31 +326,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingVertical: 12,
-  },
-  pickerContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  pickerDoneButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  pickerDoneText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
   },
   section: {
     backgroundColor: COLORS.background,

@@ -9,9 +9,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '../../../constants';
 import { userExerciseCustomizationService } from '../../../services';
+import { formatters } from '../../../utils';
+import { DatePickerCard } from '../../../components';
 
 /**
  * Edit Timeframe Modal
@@ -97,23 +98,6 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
 
     loadCustomization();
   }, [exercise, visible]);
-
-  const formatDate = (date) => {
-    if (!date) return '';
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
-  };
-
-  const formatDateForDB = (date) => {
-    if (!date) return null;
-    // Format date as YYYY-MM-DD in local timezone
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   // Calculate number of days between two dates (inclusive)
   const calculateDays = (start, end) => {
@@ -227,8 +211,8 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
     try {
       const { error } = await userExerciseCustomizationService.upsertCustomization(
         exercise.id,
-        formatDateForDB(normalizedStart),
-        formatDateForDB(normalizedEnd)
+        formatters.formatDateForDB(normalizedStart),
+        formatters.formatDateForDB(normalizedEnd)
       );
 
       if (error) {
@@ -274,7 +258,7 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
             Select your preferred dates within the exercise range:
           </Text>
           <Text style={styles.rangeText}>
-            {formatDate(exerciseStart)} - {formatDate(exerciseEnd)}
+            {formatters.formatDatePicker(exerciseStart)} - {formatters.formatDatePicker(exerciseEnd)}
           </Text>
 
           {exercise.number_of_days && (
@@ -312,7 +296,7 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
               }}
             >
               <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
-                {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
+                {startDate ? formatters.formatDatePicker(startDate) : 'MM/DD/YYYY'}
               </Text>
             </TouchableOpacity>
             <Text style={styles.dateSeparator}>to</Text>
@@ -324,7 +308,7 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
               }}
             >
               <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
-                {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
+                {endDate ? formatters.formatDatePicker(endDate) : 'MM/DD/YYYY'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -350,87 +334,41 @@ export const EditTimeframeModal = ({ visible, exercise, onClose, onTimeframeUpda
         </View>
 
         {showStartPicker && (
-          <View style={styles.pickerContainer}>
-            <DateTimePicker
-              value={startDate || exerciseStart || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              minimumDate={exerciseStart}
-              maximumDate={
-                exercise.number_of_days
-                  ? (() => {
-                      const maxStart = new Date(exerciseEnd);
-                      maxStart.setDate(maxStart.getDate() - exercise.number_of_days + 1);
-                      maxStart.setHours(0, 0, 0, 0);
-                      return maxStart < exerciseStart ? exerciseStart : maxStart;
-                    })()
-                  : exerciseEnd
-              }
-              onChange={(event, selectedDate) => {
-                if (Platform.OS === 'android') {
-                  setShowStartPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  handleStartDateChange(selectedDate);
-                  if (Platform.OS === 'ios') {
-                    setShowStartPicker(false);
-                  }
-                } else if (event.type === 'dismissed') {
-                  setShowStartPicker(false);
-                }
-              }}
-            />
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={styles.pickerDoneButton}
-                onPress={() => setShowStartPicker(false)}
-              >
-                <Text style={styles.pickerDoneText}>Done</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <DatePickerCard
+            value={startDate || exerciseStart}
+            onChange={handleStartDateChange}
+            onClose={() => setShowStartPicker(false)}
+            minimumDate={exerciseStart}
+            maximumDate={
+              exercise.number_of_days
+                ? (() => {
+                    const maxStart = new Date(exerciseEnd);
+                    maxStart.setDate(maxStart.getDate() - exercise.number_of_days + 1);
+                    maxStart.setHours(0, 0, 0, 0);
+                    return maxStart < exerciseStart ? exerciseStart : maxStart;
+                  })()
+                : exerciseEnd
+            }
+          />
         )}
 
         {showEndPicker && (
-          <View style={styles.pickerContainer}>
-            <DateTimePicker
-              value={endDate || exerciseEnd || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              minimumDate={startDate || exerciseStart}
-              maximumDate={
-                exercise.number_of_days && startDate
-                  ? (() => {
-                      const maxEnd = new Date(startDate);
-                      maxEnd.setDate(maxEnd.getDate() + exercise.number_of_days - 1);
-                      maxEnd.setHours(0, 0, 0, 0);
-                      return maxEnd > exerciseEnd ? exerciseEnd : maxEnd;
-                    })()
-                  : exerciseEnd
-              }
-              onChange={(event, selectedDate) => {
-                if (Platform.OS === 'android') {
-                  setShowEndPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  handleEndDateChange(selectedDate);
-                  if (Platform.OS === 'ios') {
-                    setShowEndPicker(false);
-                  }
-                } else if (event.type === 'dismissed') {
-                  setShowEndPicker(false);
-                }
-              }}
-            />
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={styles.pickerDoneButton}
-                onPress={() => setShowEndPicker(false)}
-              >
-                <Text style={styles.pickerDoneText}>Done</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <DatePickerCard
+            value={endDate || exerciseEnd}
+            onChange={handleEndDateChange}
+            onClose={() => setShowEndPicker(false)}
+            minimumDate={startDate || exerciseStart}
+            maximumDate={
+              exercise.number_of_days && startDate
+                ? (() => {
+                    const maxEnd = new Date(startDate);
+                    maxEnd.setDate(maxEnd.getDate() + exercise.number_of_days - 1);
+                    maxEnd.setHours(0, 0, 0, 0);
+                    return maxEnd > exerciseEnd ? exerciseEnd : maxEnd;
+                  })()
+                : exerciseEnd
+            }
+          />
         )}
       </KeyboardAvoidingView>
     </Modal>
@@ -571,7 +509,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButton: {
-    backgroundColor: '#A8D5A8',
+    backgroundColor: COLORS.success,
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -585,30 +523,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
   },
   closeButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  pickerContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  pickerDoneButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  pickerDoneText: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',

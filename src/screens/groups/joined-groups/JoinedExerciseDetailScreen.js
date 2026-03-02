@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants';
+import { COLORS, SHADOWS } from '../../../constants';
 import { exerciseService, exerciseProgressService, userExerciseCustomizationService } from '../../../services';
-import { BottomTabBar } from '../../../components';
+import { BottomTabBar, ScreenHeader } from '../../../components';
 import { JoinedExerciseMenuModal } from './JoinedExerciseMenuModal';
 import { DayNotesModal } from './DayNotesModal';
 import { formatters } from '../../../utils';
@@ -122,13 +122,6 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
     return days;
   };
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const handleDayPress = (day) => {
     setSelectedDay(day);
     setShowDayModal(true);
@@ -167,22 +160,17 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
   if (!exercise) {
     return (
       <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            if (groupId) {
-              navigation.navigate('JoinedGroupDetail', { groupId });
-            } else {
-              navigation.goBack();
-            }
-          }}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Exercise not found</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Exercise not found"
+        onBack={() => {
+          if (groupId) {
+            navigation.navigate('JoinedGroupDetail', { groupId });
+          } else {
+            navigation.goBack();
+          }
+        }}
+      />
+    </View>
     );
   }
 
@@ -190,29 +178,24 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            if (groupId) {
-              navigation.navigate('JoinedGroupDetail', { groupId });
-            } else if (exercise?.group_id) {
-              navigation.navigate('JoinedGroupDetail', { groupId: exercise.group_id });
-            } else {
-              navigation.goBack();
-            }
-          }}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
-        </TouchableOpacity>
-        <Text style={styles.title}>{exercise.title}</Text>
-        <TouchableOpacity
-          onPress={() => setShowMenu(true)}
-          style={styles.menuButton}
-        >
-          <Ionicons name="ellipsis-vertical" size={24} color={COLORS.black} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={exercise.title}
+        onBack={() => {
+          if (groupId) {
+            navigation.navigate('JoinedGroupDetail', { groupId });
+          } else if (exercise?.group_id) {
+            navigation.navigate('JoinedGroupDetail', { groupId: exercise.group_id });
+          } else {
+            navigation.goBack();
+          }
+        }}
+        style={{ marginBottom: 16 }}
+        rightElement={
+          <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.menuButton}>
+            <Ionicons name="ellipsis-vertical" size={24} color={COLORS.black} />
+          </TouchableOpacity>
+        }
+      />
 
       {exercise.description && (
         <Text style={styles.description}>{exercise.description}</Text>
@@ -254,7 +237,7 @@ export const JoinedExerciseDetailScreen = ({ navigation, route }) => {
                 )}
                 <View style={styles.dayContent}>
                   <Text style={styles.dayText}>
-                    <Text style={styles.dayNumber}>Day {day.dayNumber}</Text> - {formatDate(day.date)}
+                    <Text style={styles.dayNumber}>Day {day.dayNumber}</Text> - {formatters.formatDateLong(day.date)}
                   </Text>
                 </View>
                 {showCheckmark && (
@@ -310,13 +293,6 @@ const styles = StyleSheet.create({
     width: 40,
     padding: 4,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    flex: 1,
-    textAlign: 'center',
-  },
   menuButton: {
     width: 40,
     padding: 4,
@@ -336,11 +312,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...SHADOWS.light,
   },
   dayRow: {
     flexDirection: 'row',
@@ -368,7 +340,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    backgroundColor: '#A8D5A8',
+    backgroundColor: COLORS.success,
     zIndex: 0,
   },
   progressOverlayFull: {

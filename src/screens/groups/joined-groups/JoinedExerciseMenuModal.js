@@ -1,22 +1,13 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  Alert,
-  Linking,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants';
+import { Alert, Linking } from 'react-native';
+import { MenuModal } from '../../../components';
 import { InstructionsModal } from './InstructionsModal';
 import { EditTimeframeModal } from './EditTimeframeModal';
 import { exerciseProgressService } from '../../../services';
 
 /**
  * Joined Exercise Menu Modal
- * Menu modal with options: View Instructions, Edit Timeframe
+ * Menu modal with options: View Instructions, Edit Timeframe, Share Exercise Notes
  */
 export const JoinedExerciseMenuModal = ({
   visible,
@@ -115,50 +106,15 @@ export const JoinedExerciseMenuModal = ({
 
   return (
     <>
-      <Modal
+      <MenuModal
         visible={visible && !showInstructions && !showEditTimeframe}
-        transparent
-        animationType="fade"
-        onRequestClose={onClose}
-      >
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={onClose}
-        >
-          <View style={styles.modal}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={handleViewInstructions}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="eye" size={20} color={COLORS.black} />
-              <Text style={styles.menuItemText}>View Instructions</Text>
-            </TouchableOpacity>
-            <View style={styles.divider} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={handleEditTimeframe}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="pencil" size={20} color={COLORS.black} />
-              <Text style={styles.menuItemText}>Edit Timeframe</Text>
-            </TouchableOpacity>
-            <View style={styles.divider} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={handleShareNotes}
-              disabled={sharing}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="share-social-outline" size={20} color={COLORS.black} />
-              <Text style={styles.menuItemText}>
-                {sharing ? 'Preparing…' : 'Share Exercise Notes'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        onClose={onClose}
+        items={[
+          { icon: 'eye', label: 'View Instructions', onPress: handleViewInstructions },
+          { icon: 'pencil', label: 'Edit Timeframe', onPress: handleEditTimeframe },
+          { icon: 'share-social-outline', label: sharing ? 'Preparing…' : 'Share Exercise Notes', onPress: handleShareNotes, disabled: sharing },
+        ]}
+      />
 
       <InstructionsModal
         visible={showInstructions}
@@ -178,39 +134,3 @@ export const JoinedExerciseMenuModal = ({
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modal: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    width: '80%',
-    maxWidth: 300,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: COLORS.black,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.lightGray,
-    marginHorizontal: 16,
-  },
-});
-

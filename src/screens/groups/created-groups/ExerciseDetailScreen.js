@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
 import { exerciseService } from '../../../services';
-import { BottomTabBar } from '../../../components';
+import { BottomTabBar, ScreenHeader, Card } from '../../../components';
 import { ExerciseMenuModal } from './ExerciseMenuModal';
 import { formatters } from '../../../utils';
 
@@ -64,16 +64,6 @@ export const ExerciseDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   if (loading) {
     return (
       <View style={styles.container}>
@@ -99,78 +89,67 @@ export const ExerciseDetailScreen = ({ navigation, route }) => {
   if (!exercise) {
     return (
       <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            const { groupId } = route.params || {};
-            if (groupId) {
-              navigation.navigate('CreatedGroupDetail', { groupId });
-            } else {
-              navigation.goBack();
-            }
-          }}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Exercise not found</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Exercise not found"
+        onBack={() => {
+          const { groupId } = route.params || {};
+          if (groupId) {
+            navigation.navigate('CreatedGroupDetail', { groupId });
+          } else {
+            navigation.goBack();
+          }
+        }}
+      />
+    </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            if (exercise?.group_id) {
-              navigation.navigate('CreatedGroupDetail', { groupId: exercise.group_id });
-            } else {
-              navigation.goBack();
-            }
-          }}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
-        </TouchableOpacity>
-        <Text style={styles.title}>{exercise.title}</Text>
-        <TouchableOpacity
-          onPress={() => setShowMenu(true)}
-          style={styles.menuButton}
-        >
-          <Ionicons name="ellipsis-vertical" size={24} color={COLORS.black} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={exercise.title}
+        onBack={() => {
+          if (exercise?.group_id) {
+            navigation.navigate('CreatedGroupDetail', { groupId: exercise.group_id });
+          } else {
+            navigation.goBack();
+          }
+        }}
+        rightElement={
+          <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.menuButton}>
+            <Ionicons name="ellipsis-vertical" size={24} color={COLORS.black} />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {exercise.description && (
-          <View style={styles.section}>
+          <Card>
             <Text style={styles.description}>{exercise.description}</Text>
-          </View>
+          </Card>
         )}
 
-        <View style={styles.section}>
+        <Card>
           <Text style={styles.sectionTitle}>Date Range</Text>
           <Text style={styles.dateText}>
-            {formatDate(exercise.start_date)} - {formatDate(exercise.end_date)}
+            {formatters.formatDateLongWithYear(exercise.start_date)} - {formatters.formatDateLongWithYear(exercise.end_date)}
           </Text>
-        </View>
+        </Card>
 
         {exercise.frequency_per_day && (
-          <View style={styles.section}>
+          <Card>
             <Text style={styles.sectionTitle}>Frequency</Text>
             <Text style={styles.frequencyText}>
               {formatters.formatFrequencyRange(exercise.frequency_per_day)}x per day
             </Text>
-          </View>
+          </Card>
         )}
 
         {exercise.instructions && (
-          <View style={styles.section}>
+          <Card>
             <Text style={styles.sectionTitle}>Instructions</Text>
             <Text style={styles.instructionsText}>{exercise.instructions}</Text>
-          </View>
+          </Card>
         )}
       </ScrollView>
 
@@ -204,13 +183,6 @@ const styles = StyleSheet.create({
     width: 40,
     padding: 4,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    flex: 1,
-    textAlign: 'center',
-  },
   menuButton: {
     width: 40,
     padding: 4,
@@ -219,17 +191,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-  },
-  section: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
   },
   description: {
     fontSize: 16,

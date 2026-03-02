@@ -10,10 +10,9 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants';
 import { issueReportService } from '../../services';
-import { BottomTabBar } from '../../components';
+import { BottomTabBar, ScreenHeader, Card } from '../../components';
 import { ReportIssueSuccessModal } from './ReportIssueSuccessModal';
 
 /**
@@ -67,16 +66,11 @@ export const ReportIssueScreen = ({ navigation, route }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
     >
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.secondary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Report Issue</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <ScreenHeader
+        title="Report Issue"
+        onBack={() => navigation.goBack()}
+        iconColor={COLORS.secondary}
+      />
 
       <ScrollView
         style={styles.content}
@@ -84,7 +78,7 @@ export const ReportIssueScreen = ({ navigation, route }) => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.card}>
+        <Card padding={20} style={{ marginBottom: 0 }}>
           <View style={styles.field}>
             <Text style={styles.label}>Title</Text>
             <TextInput
@@ -109,7 +103,7 @@ export const ReportIssueScreen = ({ navigation, route }) => {
               textAlignVertical="top"
             />
           </View>
-        </View>
+        </Card>
       </ScrollView>
 
       <TouchableOpacity
@@ -139,43 +133,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingTop: 70,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  backButton: {
-    width: 40,
-    padding: 4,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
   },
   contentContainer: {
     paddingBottom: 20,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
   },
   field: {
     marginBottom: 20,

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants';
+import { COLORS, SHADOWS } from '../../../constants';
 import { EditGroupModal } from './EditGroupModal';
 import { DeleteGroupModal } from './DeleteGroupModal';
 
@@ -134,11 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     width: '80%',
     maxWidth: 300,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    ...SHADOWS.medium,
   },
   menuItem: {
     flexDirection: 'row',

@@ -51,6 +51,7 @@ export const SIZES = {
   // Border radius
   radius: 8,
   radiusLarge: 12,
+  radiusCard: 16,
   radiusRound: 999,
 };
 
@@ -62,32 +63,26 @@ export const FONTS = {
 };
 
 export const SHADOWS = {
+  // Standard card shadow — used for white content cards
   light: {
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
+  // Modal / overlay shadow
   medium: {
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 5.46,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
     elevation: 5,
   },
+  // Prominent raised elements
   dark: {
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 10.32,
     elevation: 10,

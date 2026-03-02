@@ -49,7 +49,7 @@ export const Button = ({
       ]}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.7}
+      activeOpacity={0.85}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'outline' ? COLORS.primary : COLORS.white} />
@@ -62,15 +62,18 @@ export const Button = ({
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: SIZES.padding,
-    paddingHorizontal: SIZES.padding * 2,
-    borderRadius: SIZES.radius,
+    paddingVertical: 14,
+    borderRadius: SIZES.radiusLarge,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 50,
   },
   primaryButton: {
     backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   secondaryButton: {
     backgroundColor: COLORS.secondary,
@@ -84,7 +87,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
-    fontSize: SIZES.font,
+    fontSize: 16,
     fontWeight: '600',
   },
   buttonText: {

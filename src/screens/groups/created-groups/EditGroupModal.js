@@ -11,10 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants';
 import { groupService } from '../../../services';
+import { formatters } from '../../../utils';
+import { ScreenHeader, DatePickerInput } from '../../../components';
 
 /**
  * Edit Group Modal
@@ -29,19 +29,6 @@ export const EditGroupModal = ({ visible, group, onClose, onGroupUpdated }) => {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const formatDate = (date) => {
-    if (!date) return '';
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
-  };
-
-  const formatDateForDB = (date) => {
-    if (!date) return null;
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-  };
 
   useEffect(() => {
     if (group) {
@@ -67,8 +54,8 @@ export const EditGroupModal = ({ visible, group, onClose, onGroupUpdated }) => {
       const updates = {
         name: name.trim(),
         description: description.trim() || null,
-        start_date: formatDateForDB(startDate),
-        end_date: formatDateForDB(endDate),
+        start_date: formatters.formatDateForDB(startDate),
+        end_date: formatters.formatDateForDB(endDate),
       };
 
       const { error } = await groupService.updateGroup(group.id, updates);
@@ -98,13 +85,7 @@ export const EditGroupModal = ({ visible, group, onClose, onGroupUpdated }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeIcon}>×</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Edit Group</Text>
-          <View style={styles.placeholder} />
-        </View>
+        <ScreenHeader title="Edit Group" onBack={onClose} variant="modal" />
 
         <ScrollView
           style={styles.content}
@@ -139,44 +120,24 @@ export const EditGroupModal = ({ visible, group, onClose, onGroupUpdated }) => {
 
           <View style={styles.field}>
             <Text style={styles.label}>Start Date (optional)</Text>
-            <TouchableOpacity
-              style={styles.dateInputContainer}
-              onPress={() => {
-                setShowEndPicker(false);
-                setShowStartPicker(true);
-              }}
-            >
-              <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
-                {startDate ? formatDate(startDate) : 'MM/DD/YYYY'}
-              </Text>
-              <Ionicons
-                name="calendar-outline"
-                size={20}
-                color={COLORS.black}
-                style={styles.calendarIcon}
-              />
-            </TouchableOpacity>
+            <DatePickerInput
+              value={startDate}
+              onChange={setStartDate}
+              open={showStartPicker}
+              onOpen={() => { setShowEndPicker(false); setShowStartPicker(true); }}
+              onClose={() => setShowStartPicker(false)}
+            />
           </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>End Date (optional)</Text>
-            <TouchableOpacity
-              style={styles.dateInputContainer}
-              onPress={() => {
-                setShowStartPicker(false);
-                setShowEndPicker(true);
-              }}
-            >
-              <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
-                {endDate ? formatDate(endDate) : 'MM/DD/YYYY'}
-              </Text>
-              <Ionicons
-                name="calendar-outline"
-                size={20}
-                color={COLORS.black}
-                style={styles.calendarIcon}
-              />
-            </TouchableOpacity>
+            <DatePickerInput
+              value={endDate}
+              onChange={setEndDate}
+              open={showEndPicker}
+              onOpen={() => { setShowStartPicker(false); setShowEndPicker(true); }}
+              onClose={() => setShowEndPicker(false)}
+            />
           </View>
         </ScrollView>
 
@@ -188,68 +149,6 @@ export const EditGroupModal = ({ visible, group, onClose, onGroupUpdated }) => {
         >
           <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
-
-        {showStartPicker && (
-          <View style={styles.pickerContainer}>
-            <DateTimePicker
-              value={startDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              onChange={(event, selectedDate) => {
-                if (Platform.OS === 'android') {
-                  setShowStartPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  setStartDate(selectedDate);
-                  if (Platform.OS === 'ios') {
-                    setShowStartPicker(false);
-                  }
-                } else if (event.type === 'dismissed') {
-                  setShowStartPicker(false);
-                }
-              }}
-            />
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={styles.pickerDoneButton}
-                onPress={() => setShowStartPicker(false)}
-              >
-                <Text style={styles.pickerDoneText}>Done</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        {showEndPicker && (
-          <View style={styles.pickerContainer}>
-            <DateTimePicker
-              value={endDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              onChange={(event, selectedDate) => {
-                if (Platform.OS === 'android') {
-                  setShowEndPicker(false);
-                }
-                if (event.type === 'set' && selectedDate) {
-                  setEndDate(selectedDate);
-                  if (Platform.OS === 'ios') {
-                    setShowEndPicker(false);
-                  }
-                } else if (event.type === 'dismissed') {
-                  setShowEndPicker(false);
-                }
-              }}
-            />
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={styles.pickerDoneButton}
-                onPress={() => setShowEndPicker(false)}
-              >
-                <Text style={styles.pickerDoneText}>Done</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -262,69 +161,11 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: 60,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  closeButton: {
-    width: 40,
-    padding: 4,
-  },
-  closeIcon: {
-    fontSize: 36,
-    color: COLORS.secondary,
-    fontWeight: '300',
-    lineHeight: 36,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingBottom: 20,
-  },
-  dateText: {
-    fontSize: 16,
-    color: COLORS.black,
-  },
-  datePlaceholder: {
-    color: COLORS.inputPlaceholder,
-  },
-  pickerContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  pickerDoneButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  pickerDoneText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
   },
   field: {
     marginBottom: 20,
@@ -347,22 +188,6 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
-  },
-  dateInputContainer: {
-    position: 'relative',
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    padding: 12,
-    paddingRight: 40,
-    borderWidth: 1,
-    borderColor: COLORS.inputBorder,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  calendarIcon: {
-    position: 'absolute',
-    right: 12,
   },
   saveButton: {
     backgroundColor: COLORS.primary,

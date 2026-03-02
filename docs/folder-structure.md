@@ -32,7 +32,7 @@ src/components/
 ├── Input.js
 ├── icons/
 │   ├── HomeIcon.js
-│   └── ProfileIcon.js
+│   └── ProfileIcon.js2
 └── index.js
 ```
 

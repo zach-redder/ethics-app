@@ -10,7 +10,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { COLORS } from '../../constants';
+import { COLORS, SHADOWS } from '../../constants';
 import { authService } from '../../services';
 
 /**
@@ -163,11 +163,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.light,
   },
   input: {
     paddingVertical: 16,

@@ -46,13 +46,6 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
     };
   }, []);
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const handleCheck = async () => {
     setLoading(true);
     try {
@@ -150,7 +143,7 @@ export const DayNotesModal = ({ visible, exercise, day, onClose, onDayUpdated })
               </TouchableOpacity>
               <View style={styles.titleContainer}>
                 <Text style={styles.title}>Day {day.dayNumber}</Text>
-                <Text style={styles.date}>{formatDate(day.date)}</Text>
+                <Text style={styles.date}>{formatters.formatDateLong(day.date)}</Text>
               </View>
               <View style={styles.placeholder} />
             </View>
@@ -303,7 +296,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray,
   },
   addButton: {
-    backgroundColor: '#A8D5A8',
+    backgroundColor: COLORS.success,
   },
   checkButton: {
     backgroundColor: COLORS.black,

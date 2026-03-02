@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { COLORS } from '../../../constants';
+import { COLORS, SHADOWS } from '../../../constants';
 import { groupService } from '../../../services';
 
 /**
@@ -82,11 +82,7 @@ const styles = StyleSheet.create({
     width: '80%',
     maxWidth: 300,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    ...SHADOWS.medium,
   },
   title: {
     fontSize: 18,
