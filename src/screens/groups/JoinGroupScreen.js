@@ -14,37 +14,21 @@ import { groupMemberService, groupService } from '../../services';
  * Join Group Screen - Enter 5-digit PIN
  */
 export const JoinGroupScreen = ({ navigation, route }) => {
-  const [code, setCode] = useState(['', '', '', '', '']);
+  const [code, setCode] = useState('');
+  const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
-  const inputRefs = useRef([]);
+  const inputRef = useRef(null);
 
-  const handleCodeChange = (value, index) => {
-    // Only allow digits
-    if (value && !/^\d$/.test(value)) return;
-
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-
-    // Auto-focus next input
-    if (value && index < 4) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when all digits are entered
-    if (value && index === 4 && newCode.every(d => d)) {
-      handleJoinGroup(newCode.join(''));
-    }
-  };
-
-  const handleKeyPress = (e, index) => {
-    if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+  const handleChange = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 5);
+    setCode(digits);
+    if (digits.length === 5) {
+      handleJoinGroup(digits);
     }
   };
 
   const handleJoinGroup = async (groupCode) => {
-    const fullCode = groupCode || code.join('');
+    const fullCode = groupCode || code;
     if (fullCode.length !== 5) {
       Alert.alert('Error', 'Please enter a 5-digit code');
       return;
@@ -52,7 +36,6 @@ export const JoinGroupScreen = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      // Join the group
       const { error, groupId } = await groupMemberService.joinGroup(fullCode);
 
       if (error) {
@@ -61,7 +44,6 @@ export const JoinGroupScreen = ({ navigation, route }) => {
         return;
       }
 
-      // Get group details
       const { data: groupData, error: groupError } = await groupService.getGroupById(groupId);
 
       if (groupError) {
@@ -70,7 +52,6 @@ export const JoinGroupScreen = ({ navigation, route }) => {
         return;
       }
 
-      // Navigate to confirmation
       navigation.navigate('GroupConfirmation', {
         group: groupData,
         isCreator: false,
@@ -81,6 +62,9 @@ export const JoinGroupScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
+
+  // The "cursor" position: the next empty box, capped at the last box
+  const activeIndex = Math.min(code.length, 4);
 
   return (
     <View style={styles.container}>
@@ -105,22 +89,37 @@ export const JoinGroupScreen = ({ navigation, route }) => {
       <View style={styles.content}>
         <Text style={styles.subtitle}>Please enter a 5 digit PIN.</Text>
 
-        <View style={styles.codeContainer}>
-          {code.map((digit, index) => (
-            <View key={index} style={styles.codeInputContainer}>
-              <TextInput
-                ref={ref => inputRefs.current[index] = ref}
-                style={styles.codeInput}
-                value={digit}
-                onChangeText={(value) => handleCodeChange(value, index)}
-                onKeyPress={(e) => handleKeyPress(e, index)}
-                keyboardType="number-pad"
-                maxLength={1}
-                selectTextOnFocus
-              />
-            </View>
-          ))}
-        </View>
+        {/* Tapping anywhere on the row focuses the hidden input */}
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => inputRef.current?.focus()}
+          style={styles.codeContainer}
+        >
+          {[0, 1, 2, 3, 4].map((index) => {
+            const isActive = focused && index === activeIndex;
+            return (
+              <View
+                key={index}
+                style={[styles.codeBox, isActive && styles.codeBoxActive]}
+              >
+                <Text style={styles.digitText}>{code[index] ?? ''}</Text>
+              </View>
+            );
+          })}
+        </TouchableOpacity>
+
+        {/* Single hidden input — captures all keystrokes, never shown */}
+        <TextInput
+          ref={inputRef}
+          value={code}
+          onChangeText={handleChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          keyboardType="number-pad"
+          maxLength={5}
+          caretHidden
+          style={styles.hiddenInput}
+        />
 
         {loading && (
           <Text style={styles.loadingText}>Joining group...</Text>
@@ -181,20 +180,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  codeInputContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 8,
-    ...SHADOWS.light,
-  },
-  codeInput: {
+  codeBox: {
     width: 50,
     height: 60,
-    fontSize: 24,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: COLORS.black,
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderBottomWidth: 2,
     borderBottomColor: COLORS.gray,
+    ...SHADOWS.light,
+  },
+  codeBoxActive: {
+    backgroundColor: COLORS.background,
+    borderBottomColor: COLORS.primary,
+  },
+  digitText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: COLORS.black,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    opacity: 0,
+    width: 1,
+    height: 1,
   },
   loadingText: {
     marginTop: 32,
